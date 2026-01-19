@@ -287,6 +287,8 @@ export default {
     enable: '启用策略',
     disable: '禁用策略',
     hint: '定时策略将在设定时间自动开始任务',
+    executingPolicy: '正在按照「{{name}}」定时执行',
+    startedAt: '开始时间: {{time}}',
   },
 
   // 错误消息

@@ -40,9 +40,17 @@ export function TabBar() {
     dashboardView,
     toggleDashboardView,
     updateInfo,
+    recentlyClosed,
   } = useAppStore();
   
   const { state: menuState, show: showMenu, hide: hideMenu } = useContextMenu();
+
+  // 当最近关闭列表为空时，自动关闭面板
+  useEffect(() => {
+    if (recentlyClosed.length === 0) {
+      setShowRecentlyClosedPanel(false);
+    }
+  }, [recentlyClosed.length]);
 
   const handleNewTab = () => {
     createInstance();
@@ -367,20 +375,22 @@ export function TabBar() {
             )}
           </button>
         )}
-        {/* 最近关闭按钮 */}
-        <button
-          ref={recentlyClosedButtonRef}
-          onClick={() => setShowRecentlyClosedPanel(!showRecentlyClosedPanel)}
-          className={clsx(
-            'p-2 rounded-md transition-colors',
-            showRecentlyClosedPanel
-              ? 'bg-accent/10 text-accent'
-              : 'hover:bg-bg-hover text-text-secondary'
-          )}
-          title={t('recentlyClosed.title')}
-        >
-          <History className="w-4 h-4" />
-        </button>
+        {/* 最近关闭按钮 - 仅在有记录时显示 */}
+        {recentlyClosed.length > 0 && (
+          <button
+            ref={recentlyClosedButtonRef}
+            onClick={() => setShowRecentlyClosedPanel(!showRecentlyClosedPanel)}
+            className={clsx(
+              'p-2 rounded-md transition-colors',
+              showRecentlyClosedPanel
+                ? 'bg-accent/10 text-accent'
+                : 'hover:bg-bg-hover text-text-secondary'
+            )}
+            title={t('recentlyClosed.title')}
+          >
+            <History className="w-4 h-4" />
+          </button>
+        )}
         <button
           onClick={toggleDashboardView}
           className={clsx(

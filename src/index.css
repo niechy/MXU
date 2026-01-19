@@ -220,3 +220,19 @@ body {
 .task-item-running {
   animation: taskCardBreathing 3s ease-in-out infinite;
 }
+
+/* Fade in animation for tooltips and bubbles */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+  }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out forwards;
+}

@@ -287,6 +287,8 @@ export default {
     enable: 'Enable schedule',
     disable: 'Disable schedule',
     hint: 'Scheduled tasks will run automatically at set times',
+    executingPolicy: 'Running scheduled "{{name}}"',
+    startedAt: 'Started at: {{time}}',
   },
 
   // Error messages

@@ -197,6 +197,17 @@ interface AppState {
   setCurrentTaskIndex: (instanceId: string, index: number) => void;
   advanceCurrentTaskIndex: (instanceId: string) => void;
   clearPendingTasks: (instanceId: string) => void;
+  
+  // 定时执行状态
+  scheduleExecutions: Record<string, ScheduleExecutionInfo>;
+  setScheduleExecution: (instanceId: string, info: ScheduleExecutionInfo | null) => void;
+  clearScheduleExecution: (instanceId: string) => void;
+}
+
+// 定时执行状态信息
+export interface ScheduleExecutionInfo {
+  policyName: string;
+  startTime: number; // timestamp
 }
 
 // 更新信息类型
@@ -1134,6 +1145,23 @@ export const useAppStore = create<AppState>()(
           ...state.instanceCurrentTaskIndex,
           [instanceId]: 0,
         },
+      })),
+      
+      // 定时执行状态
+      scheduleExecutions: {},
+      
+      setScheduleExecution: (instanceId, info) => set((state) => ({
+        scheduleExecutions: info
+          ? { ...state.scheduleExecutions, [instanceId]: info }
+          : Object.fromEntries(
+              Object.entries(state.scheduleExecutions).filter(([id]) => id !== instanceId)
+            ),
+      })),
+      
+      clearScheduleExecution: (instanceId) => set((state) => ({
+        scheduleExecutions: Object.fromEntries(
+          Object.entries(state.scheduleExecutions).filter(([id]) => id !== instanceId)
+        ),
       })),
     })
   )
