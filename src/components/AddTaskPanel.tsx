@@ -2,7 +2,11 @@ import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, Plus } from 'lucide-react';
 import { useAppStore } from '@/stores/appStore';
+import { maaService } from '@/services/maaService';
+import { loggers, generateTaskPipelineOverride } from '@/utils';
 import clsx from 'clsx';
+
+const log = loggers.task;
 
 export function AddTaskPanel() {
   const { t } = useTranslation();
@@ -13,6 +17,10 @@ export function AddTaskPanel() {
     addTaskToInstance,
     resolveI18nText,
     language,
+    // 任务运行状态管理
+    setTaskRunStatus,
+    registerMaaTaskMapping,
+    appendPendingTaskId,
   } = useAppStore();
 
   const instance = getActiveInstance();
@@ -40,12 +48,51 @@ export function AddTaskPanel() {
     });
   }, [projectInterface, searchQuery, resolveI18nText, langKey]);
 
-  const handleAddTask = (taskName: string) => {
+  const handleAddTask = async (taskName: string) => {
     if (!instance || !projectInterface) return;
 
     const task = projectInterface.task.find((t) => t.name === taskName);
-    if (task) {
-      addTaskToInstance(instance.id, task);
+    if (!task) return;
+    
+    // 先添加任务到列表
+    addTaskToInstance(instance.id, task);
+    
+    // 如果实例正在运行，立即调用 PostTask 追加到执行队列
+    if (instance.isRunning) {
+      try {
+        // 使用 getState() 获取最新状态（zustand 状态更新是同步的）
+        const latestState = useAppStore.getState();
+        const updatedInstance = latestState.instances.find(i => i.id === instance.id);
+        const addedTask = updatedInstance?.selectedTasks
+          .filter(t => t.taskName === taskName)
+          .pop();
+        
+        if (!addedTask) {
+          log.warn('无法找到刚添加的任务');
+          return;
+        }
+        
+        // 构建 pipeline override
+        const pipelineOverride = generateTaskPipelineOverride(addedTask, projectInterface);
+        
+        log.info('运行中追加任务:', task.entry, ', pipelineOverride:', pipelineOverride);
+        
+        // 调用 PostTask
+        const maaTaskId = await maaService.runTask(instance.id, task.entry, pipelineOverride);
+        
+        log.info('任务已追加, maaTaskId:', maaTaskId);
+        
+        // 注册映射关系
+        registerMaaTaskMapping(instance.id, maaTaskId, addedTask.id);
+        
+        // 设置任务状态为 pending
+        setTaskRunStatus(instance.id, addedTask.id, 'pending');
+        
+        // 追加到任务队列
+        appendPendingTaskId(instance.id, maaTaskId);
+      } catch (err) {
+        log.error('追加任务失败:', err);
+      }
     }
   };
 

@@ -5,18 +5,23 @@ import {
   Monitor,
   Play,
   Pause,
-  Circle,
   RefreshCw,
   Download,
   Unplug,
   Maximize2,
   Copy,
   X,
+  Wifi,
+  WifiOff,
+  CheckCircle,
+  Loader2,
+  StopCircle,
 } from 'lucide-react';
 import clsx from 'clsx';
 import { useAppStore } from '@/stores/appStore';
 import { maaService } from '@/services/maaService';
 import { ContextMenu, useContextMenu, type MenuItem } from './ContextMenu';
+import { resolveI18nText } from '@/services/contentResolver';
 import { loggers } from '@/utils/logger';
 
 const log = loggers.ui;
@@ -36,12 +41,23 @@ function InstanceCard({
 }: InstanceCardProps) {
   const { t } = useTranslation();
   const {
+    instances,
     instanceConnectionStatus,
     instanceTaskStatus,
     instanceScreenshotStreaming,
     setInstanceScreenshotStreaming,
     setInstanceConnectionStatus,
+    projectInterface,
+    selectedController,
+    selectedResource,
+    interfaceTranslations,
+    language,
+    instanceTaskRunStatus,
+    resolveI18nText: storeResolveI18nText,
   } = useAppStore();
+  
+  const langKey = language === 'zh-CN' ? 'zh_cn' : 'en_us';
+  const translations = interfaceTranslations[langKey];
 
   const { state: menuState, show: showMenu, hide: hideMenu } = useContextMenu();
 
@@ -55,6 +71,74 @@ function InstanceCard({
   const taskStatus = instanceTaskStatus[instanceId];
   const isStreaming = instanceScreenshotStreaming[instanceId] ?? false;
   const isConnected = connectionStatus === 'Connected';
+  
+  // 获取当前实例
+  const instance = instances.find(i => i.id === instanceId);
+  const isRunning = instance?.isRunning || false;
+  
+  // 获取连接状态信息
+  const getStatusInfo = useCallback(() => {
+    const controllers = projectInterface?.controller || [];
+    const resources = projectInterface?.resource || [];
+    const currentControllerName = selectedController[instanceId] || controllers[0]?.name;
+    const currentResourceName = selectedResource[instanceId] || resources[0]?.name;
+    const currentController = controllers.find(c => c.name === currentControllerName);
+    const currentResource = resources.find(r => r.name === currentResourceName);
+    
+    // 获取设备名称
+    const savedDevice = instance?.savedDevice;
+    let deviceName = '';
+    if (savedDevice?.adbDeviceName) {
+      deviceName = savedDevice.adbDeviceName;
+    } else if (savedDevice?.windowName) {
+      deviceName = savedDevice.windowName;
+    } else if (savedDevice?.playcoverAddress) {
+      deviceName = savedDevice.playcoverAddress;
+    }
+    
+    const controllerLabel = currentController 
+      ? resolveI18nText(currentController.label, translations) || currentController.name
+      : '';
+    const resourceLabel = currentResource
+      ? resolveI18nText(currentResource.label, translations) || currentResource.name
+      : '';
+    
+    return { controllerLabel, resourceLabel, deviceName };
+  }, [projectInterface, selectedController, selectedResource, instance, instanceId, translations]);
+  
+  const statusInfo = getStatusInfo();
+  
+  // 获取当前正在运行的任务名称
+  const getRunningTaskName = useCallback(() => {
+    if (!instance?.isRunning) return null;
+    
+    const taskRunStatus = instanceTaskRunStatus[instanceId];
+    if (!taskRunStatus) return null;
+    
+    // 找到状态为 running 的任务
+    const runningTaskId = Object.entries(taskRunStatus).find(
+      ([, status]) => status === 'running'
+    )?.[0];
+    
+    if (!runningTaskId) return null;
+    
+    // 找到对应的 selectedTask
+    const selectedTask = instance.selectedTasks.find(t => t.id === runningTaskId);
+    if (!selectedTask) return null;
+    
+    // 如果有自定义名称，使用自定义名称
+    if (selectedTask.customName) return selectedTask.customName;
+    
+    // 否则从 projectInterface 获取任务的显示名称
+    const taskDef = projectInterface?.task.find(t => t.name === selectedTask.taskName);
+    if (taskDef) {
+      return storeResolveI18nText(taskDef.label, langKey) || taskDef.name;
+    }
+    
+    return selectedTask.taskName;
+  }, [instance, instanceId, instanceTaskRunStatus, projectInterface, storeResolveI18nText, langKey]);
+  
+  const runningTaskName = getRunningTaskName();
 
   // 获取截图
   const captureFrame = useCallback(async (): Promise<string | null> => {
@@ -176,13 +260,6 @@ function InstanceCard({
     }
   }, [isConnected, isStreaming, instanceId, setInstanceScreenshotStreaming, streamLoop]);
 
-  // 获取状态颜色
-  const getStatusColor = () => {
-    if (taskStatus === 'Running') return 'text-green-500';
-    if (taskStatus === 'Failed') return 'text-red-500';
-    if (isConnected) return 'text-blue-500';
-    return 'text-gray-400';
-  };
 
   // 全屏模式切换
   const toggleFullscreen = useCallback((e?: React.MouseEvent) => {
@@ -342,14 +419,6 @@ function InstanceCard({
     ]
   );
 
-  const getStatusText = () => {
-    if (taskStatus === 'Running') return t('dashboard.running');
-    if (taskStatus === 'Succeeded') return t('dashboard.succeeded');
-    if (taskStatus === 'Failed') return t('dashboard.failed');
-    if (connectionStatus === 'Connecting') return t('controller.connecting');
-    if (isConnected) return t('controller.connected');
-    return t('controller.disconnected');
-  };
 
   return (
     <div
@@ -404,18 +473,80 @@ function InstanceCard({
 
       {/* 实例信息栏 */}
       <div className="px-3 py-2 border-t border-border">
-        <div className="flex items-center justify-between">
-          <span
+        <div className="flex items-center justify-between gap-2">
+          {/* 左侧：实例名称 + 控制器/设备信息 */}
+          <div className="flex items-center gap-2 min-w-0 flex-1">
+            <span
+              className={clsx(
+                'font-medium truncate flex-shrink-0',
+                isActive ? 'text-accent' : 'text-text-primary'
+              )}
+            >
+              {instanceName}
+            </span>
+            {/* 控制器/设备信息标签 */}
+            {(statusInfo.controllerLabel || statusInfo.deviceName) && (
+              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-bg-tertiary text-text-secondary text-xs truncate min-w-0">
+                {isConnected ? (
+                  <Wifi className="w-3 h-3 text-success flex-shrink-0" />
+                ) : (
+                  <WifiOff className="w-3 h-3 text-text-muted flex-shrink-0" />
+                )}
+                <span className="truncate">
+                  {statusInfo.deviceName || statusInfo.controllerLabel}
+                </span>
+              </div>
+            )}
+            {/* 资源信息标签 - 单独显示以增加间距 */}
+            {statusInfo.resourceLabel && (
+              <div className="flex items-center gap-1 px-1.5 py-0.5 rounded bg-bg-tertiary text-text-secondary text-xs truncate min-w-0">
+                <CheckCircle className="w-3 h-3 text-success flex-shrink-0" />
+                <span className="truncate">{statusInfo.resourceLabel}</span>
+              </div>
+            )}
+          </div>
+          
+          {/* 右侧：状态按钮（类似"开始任务"按钮样式） */}
+          <div
             className={clsx(
-              'font-medium truncate',
-              isActive ? 'text-accent' : 'text-text-primary'
+              'flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium transition-colors flex-shrink-0',
+              isRunning || taskStatus === 'Running'
+                ? 'bg-success text-white'
+                : taskStatus === 'Failed'
+                ? 'bg-error text-white'
+                : taskStatus === 'Succeeded'
+                ? 'bg-accent text-white'
+                : isConnected
+                ? 'bg-bg-tertiary text-text-secondary'
+                : 'bg-bg-active text-text-muted'
             )}
           >
-            {instanceName}
-          </span>
-          <div className="flex items-center gap-1.5">
-            <Circle className={clsx('w-2 h-2 fill-current', getStatusColor())} />
-            <span className={clsx('text-xs', getStatusColor())}>{getStatusText()}</span>
+            {isRunning || taskStatus === 'Running' ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span className="truncate max-w-[80px]">{runningTaskName || t('dashboard.running')}</span>
+              </>
+            ) : taskStatus === 'Failed' ? (
+              <>
+                <StopCircle className="w-3 h-3" />
+                <span>{t('dashboard.failed')}</span>
+              </>
+            ) : taskStatus === 'Succeeded' ? (
+              <>
+                <CheckCircle className="w-3 h-3" />
+                <span>{t('dashboard.succeeded')}</span>
+              </>
+            ) : isConnected ? (
+              <>
+                <Play className="w-3 h-3" />
+                <span>{t('controller.connected')}</span>
+              </>
+            ) : (
+              <>
+                <WifiOff className="w-3 h-3" />
+                <span>{t('controller.disconnected')}</span>
+              </>
+            )}
           </div>
         </div>
       </div>

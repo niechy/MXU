@@ -188,6 +188,15 @@ interface AppState {
   findMaaTaskIdBySelectedTaskId: (instanceId: string, selectedTaskId: string) => number | null;
   // 清空实例的任务运行状态
   clearTaskRunStatus: (instanceId: string) => void;
+  
+  // 运行中任务队列管理
+  instancePendingTaskIds: Record<string, number[]>;
+  instanceCurrentTaskIndex: Record<string, number>;
+  setPendingTaskIds: (instanceId: string, taskIds: number[]) => void;
+  appendPendingTaskId: (instanceId: string, taskId: number) => void;
+  setCurrentTaskIndex: (instanceId: string, index: number) => void;
+  advanceCurrentTaskIndex: (instanceId: string) => void;
+  clearPendingTasks: (instanceId: string) => void;
 }
 
 // 更新信息类型
@@ -880,9 +889,13 @@ export const useAppStore = create<AppState>()(
         const updatedInstances = currentState.instances.map(instance => {
           const backendState = states.instances[instance.id];
           if (backendState) {
+            // 只有当后端有正在运行的任务时，才恢复 isRunning 状态
+            // taskIds 为空表示用户已停止任务（MaaTaskerPostStop 清空了 task_ids，
+            // 但 MaaTaskerRunning 可能在回调完成前仍返回 true）
+            const isRunning = backendState.isRunning && backendState.taskIds.length > 0;
             return {
               ...instance,
-              isRunning: backendState.isRunning,
+              isRunning,
             };
           }
           return instance;
@@ -891,7 +904,8 @@ export const useAppStore = create<AppState>()(
         for (const [instanceId, state] of Object.entries(states.instances)) {
           connectionStatus[instanceId] = state.connected ? 'Connected' : 'Disconnected';
           resourceLoaded[instanceId] = state.resourceLoaded;
-          if (state.isRunning) {
+          // 同样检查 taskIds，避免显示错误的运行状态
+          if (state.isRunning && state.taskIds.length > 0) {
             taskStatus[instanceId] = 'Running';
           }
         }
@@ -1076,6 +1090,49 @@ export const useAppStore = create<AppState>()(
         maaTaskIdMapping: {
           ...state.maaTaskIdMapping,
           [instanceId]: {},
+        },
+      })),
+      
+      // 运行中任务队列管理
+      instancePendingTaskIds: {},
+      instanceCurrentTaskIndex: {},
+      
+      setPendingTaskIds: (instanceId, taskIds) => set((state) => ({
+        instancePendingTaskIds: {
+          ...state.instancePendingTaskIds,
+          [instanceId]: taskIds,
+        },
+      })),
+      
+      appendPendingTaskId: (instanceId, taskId) => set((state) => ({
+        instancePendingTaskIds: {
+          ...state.instancePendingTaskIds,
+          [instanceId]: [...(state.instancePendingTaskIds[instanceId] || []), taskId],
+        },
+      })),
+      
+      setCurrentTaskIndex: (instanceId, index) => set((state) => ({
+        instanceCurrentTaskIndex: {
+          ...state.instanceCurrentTaskIndex,
+          [instanceId]: index,
+        },
+      })),
+      
+      advanceCurrentTaskIndex: (instanceId) => set((state) => ({
+        instanceCurrentTaskIndex: {
+          ...state.instanceCurrentTaskIndex,
+          [instanceId]: (state.instanceCurrentTaskIndex[instanceId] || 0) + 1,
+        },
+      })),
+      
+      clearPendingTasks: (instanceId) => set((state) => ({
+        instancePendingTaskIds: {
+          ...state.instancePendingTaskIds,
+          [instanceId]: [],
+        },
+        instanceCurrentTaskIndex: {
+          ...state.instanceCurrentTaskIndex,
+          [instanceId]: 0,
         },
       })),
     })

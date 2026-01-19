@@ -52,6 +52,13 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
     registerMaaTaskMapping,
     findSelectedTaskIdByMaaTaskId,
     clearTaskRunStatus,
+    // 任务队列管理
+    instancePendingTaskIds,
+    instanceCurrentTaskIndex,
+    setPendingTaskIds,
+    setCurrentTaskIndex: setCurrentTaskIndexStore,
+    advanceCurrentTaskIndex,
+    clearPendingTasks,
   } = useAppStore();
 
   const [isStarting, setIsStarting] = useState(false);
@@ -61,11 +68,6 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
   // 自动连接状态
   const [autoConnectPhase, setAutoConnectPhase] = useState<AutoConnectPhase>('idle');
   const [autoConnectError, setAutoConnectError] = useState<string | null>(null);
-  
-  // 任务队列状态（用于回调处理）
-  const [pendingTaskIds, setPendingTaskIds] = useState<number[]>([]);
-  const [currentTaskIndex, setCurrentTaskIndex] = useState(0);
-  const runningInstanceIdRef = useRef<string | null>(null);
   
   // 自动连接回调 ID
   const pendingCtrlIdRef = useRef<number | null>(null);
@@ -78,6 +80,11 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
 
   // 检查是否可以运行
   const instanceId = instance?.id || '';
+  
+  // 任务队列状态（从 store 获取）
+  const pendingTaskIds = instancePendingTaskIds[instanceId] || [];
+  const currentTaskIndex = instanceCurrentTaskIndex[instanceId] || 0;
+  const runningInstanceIdRef = useRef<string | null>(null);
   const isConnected = instanceConnectionStatus[instanceId] === 'Connected';
   const isResourceLoaded = instanceResourceLoaded[instanceId] || false;
   
@@ -128,8 +135,8 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
         // 检查是否还有更多任务
         if (currentTaskIndex + 1 < pendingTaskIds.length) {
           // 移动到下一个任务
+          advanceCurrentTaskIndex(runningInstanceId);
           const nextIndex = currentTaskIndex + 1;
-          setCurrentTaskIndex(nextIndex);
           setInstanceCurrentTaskId(runningInstanceId, pendingTaskIds[nextIndex]);
           
           // 将下一个任务设为 running
@@ -149,8 +156,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
           setInstanceTaskStatus(runningInstanceId, 'Succeeded');
           updateInstance(runningInstanceId, { isRunning: false });
           setInstanceCurrentTaskId(runningInstanceId, null);
-          setPendingTaskIds([]);
-          setCurrentTaskIndex(0);
+          clearPendingTasks(runningInstanceId);
           runningInstanceIdRef.current = null;
         }
       } else if (message === 'Tasker.Task.Failed') {
@@ -170,8 +176,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
         setInstanceTaskStatus(runningInstanceId, 'Failed');
         updateInstance(runningInstanceId, { isRunning: false });
         setInstanceCurrentTaskId(runningInstanceId, null);
-        setPendingTaskIds([]);
-        setCurrentTaskIndex(0);
+        clearPendingTasks(runningInstanceId);
         runningInstanceIdRef.current = null;
       }
     }).then(fn => {
@@ -181,7 +186,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
     return () => {
       if (unlisten) unlisten();
     };
-  }, [pendingTaskIds, currentTaskIndex, projectInterface?.agent, setInstanceCurrentTaskId, setInstanceTaskStatus, updateInstance, findSelectedTaskIdByMaaTaskId, setTaskRunStatus]);
+  }, [pendingTaskIds, currentTaskIndex, projectInterface?.agent, setInstanceCurrentTaskId, setInstanceTaskStatus, updateInstance, findSelectedTaskIdByMaaTaskId, setTaskRunStatus, advanceCurrentTaskIndex, clearPendingTasks]);
 
   const handleSelectAll = () => {
     if (!instance) return;
@@ -389,8 +394,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
         setInstanceCurrentTaskId(instance.id, null);
         // 清空任务运行状态
         clearTaskRunStatus(instance.id);
-        setPendingTaskIds([]);
-        setCurrentTaskIndex(0);
+        clearPendingTasks(instance.id);
         runningInstanceIdRef.current = null;
       } catch (err) {
         log.error('停止任务失败:', err);
@@ -491,8 +495,8 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
 
         // 设置任务队列，由回调监听处理完成状态
         runningInstanceIdRef.current = instance.id;
-        setPendingTaskIds(taskIds);
-        setCurrentTaskIndex(0);
+        setPendingTaskIds(instance.id, taskIds);
+        setCurrentTaskIndexStore(instance.id, 0);
         setInstanceCurrentTaskId(instance.id, taskIds[0]);
         setIsStarting(false);
       } catch (err) {
@@ -511,6 +515,7 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
         setInstanceTaskStatus(instance.id, 'Failed');
         // 清空任务运行状态
         clearTaskRunStatus(instance.id);
+        clearPendingTasks(instance.id);
         setIsStarting(false);
       }
     }

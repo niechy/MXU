@@ -815,8 +815,25 @@ export function ConnectionPanel() {
 
   // 状态指示器
   const StatusIndicator = () => {
-    // 获取控制器显示文本
-    const getControllerStatusText = () => {
+    // 截断文本并添加省略号
+    const truncateText = (text: string, maxLength: number) => {
+      if (text.length <= maxLength) return text;
+      return text.slice(0, maxLength) + '...';
+    };
+    
+    // 获取设备显示文本（优先显示具体设备名）
+    const getDeviceStatusText = () => {
+      const savedDevice = activeInstance?.savedDevice;
+      if (savedDevice?.adbDeviceName) {
+        return truncateText(savedDevice.adbDeviceName, 6);
+      }
+      if (savedDevice?.windowName) {
+        return truncateText(savedDevice.windowName, 6);
+      }
+      if (savedDevice?.playcoverAddress) {
+        return truncateText(savedDevice.playcoverAddress, 6);
+      }
+      // 没有设备名时回退到控制器名称
       if (currentController) {
         return getControllerDisplayName(currentController);
       }
@@ -838,14 +855,14 @@ export function ConnectionPanel() {
             {t('controller.connecting')}
           </span>
         ) : isConnected ? (
-          <span className="flex items-center gap-1 text-green-500 text-xs">
+          <span className="flex items-center gap-1 text-green-500 text-xs" title={getDeviceStatusText()}>
             <Wifi className="w-3 h-3" />
-            {getControllerStatusText()}
+            {getDeviceStatusText()}
           </span>
         ) : hasHistoricalDevice && currentController ? (
-          <span className="flex items-center gap-1 text-text-muted text-xs">
+          <span className="flex items-center gap-1 text-text-muted text-xs" title={getDeviceStatusText()}>
             <WifiOff className="w-3 h-3" />
-            {getControllerDisplayName(currentController)}
+            {getDeviceStatusText()}
           </span>
         ) : (
           <span className="flex items-center gap-1 text-text-muted text-xs">
@@ -854,9 +871,9 @@ export function ConnectionPanel() {
           </span>
         )}
         {isResourceLoaded && currentResource && (
-          <span className="flex items-center gap-1 text-green-500 text-xs">
+          <span className="flex items-center gap-1 text-green-500 text-xs" title={getResourceDisplayName(currentResource)}>
             <CheckCircle className="w-3 h-3" />
-            {getResourceDisplayName(currentResource)}
+            {truncateText(getResourceDisplayName(currentResource), 6)}
           </span>
         )}
       </div>
