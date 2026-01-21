@@ -1,0 +1,13 @@
+{
+  "name": "lava",
+  "label": {
+    "zh-CN": "熔岩橙",
+    "en-US": "Lava",
+    "ja-JP": "溶岩オレンジ",
+    "ko-KR": "용암 오렌지"
+  },
+  "default": "#e85d20",
+  "hover": "#cc4d15",
+  "light": "#fde5d8",
+  "lightDark": "#5c2410"
+}

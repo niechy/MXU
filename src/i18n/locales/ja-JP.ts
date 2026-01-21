@@ -34,6 +34,7 @@ export default {
     theme: 'テーマ',
     themeLight: 'ライト',
     themeDark: 'ダーク',
+    accentColor: 'アクセントカラー',
     themeSystem: 'システムに従う',
     showOptionPreview: 'オプションプレビューを表示',
     showOptionPreviewHint: 'タスクリストにオプションのクイックプレビューを表示します',

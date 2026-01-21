@@ -38,6 +38,7 @@ import type { DownloadProgress } from '@/stores/appStore';
 import { defaultWindowSize } from '@/types/config';
 import { useAppStore } from '@/stores/appStore';
 import { setLanguage as setI18nLanguage, getInterfaceLangKey } from '@/i18n';
+import { getAccentInfoList, type AccentColor } from '@/themes';
 import {
   resolveContent,
   loadIconAsDataUrl,
@@ -66,6 +67,8 @@ export function SettingsPage() {
   const {
     theme,
     setTheme,
+    accentColor,
+    setAccentColor,
     language,
     setLanguage,
     setCurrentPage,
@@ -96,6 +99,9 @@ export function SettingsPage() {
     setRightPanelWidth,
     setRightPanelCollapsed,
   } = useAppStore();
+
+  // 获取强调色列表
+  const accentColors = useMemo(() => getAccentInfoList(language), [language]);
 
   const [resolvedContent, setResolvedContent] = useState<ResolvedContent>({
     description: '',
@@ -665,6 +671,39 @@ export function SettingsPage() {
                   >
                     {t('settings.themeDark')}
                   </button>
+                </div>
+              </div>
+
+              {/* 强调色 */}
+              <div className="bg-bg-secondary rounded-xl p-4 border border-border">
+                <div className="flex items-center gap-3 mb-3">
+                  <Palette className="w-5 h-5 text-accent" />
+                  <span className="font-medium text-text-primary">{t('settings.accentColor')}</span>
+                </div>
+                <div className="grid grid-cols-3 gap-2">
+                  {accentColors.map((accent) => (
+                    <button
+                      key={accent.name}
+                      onClick={() => setAccentColor(accent.name as AccentColor)}
+                      className={clsx(
+                        'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors',
+                        accentColor === accent.name
+                          ? 'ring-2 ring-offset-2 ring-offset-bg-secondary'
+                          : 'hover:bg-bg-hover',
+                        'bg-bg-tertiary',
+                      )}
+                      style={{
+                        // 选中时使用该颜色作为 ring 颜色
+                        ...(accentColor === accent.name && { '--tw-ring-color': accent.color }),
+                      }}
+                    >
+                      <span
+                        className="w-4 h-4 rounded-full flex-shrink-0 border border-border-strong"
+                        style={{ backgroundColor: accent.color }}
+                      />
+                      <span className="truncate text-text-secondary">{accent.label}</span>
+                    </button>
+                  ))}
                 </div>
               </div>
 

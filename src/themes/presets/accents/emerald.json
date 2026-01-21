@@ -1,0 +1,13 @@
+{
+  "name": "emerald",
+  "label": {
+    "zh-CN": "宝石绿",
+    "en-US": "Emerald",
+    "ja-JP": "エメラルド",
+    "ko-KR": "에메랄드"
+  },
+  "default": "#1e8c5a",
+  "hover": "#167048",
+  "light": "#d4f0e3",
+  "lightDark": "#0d3d27"
+}

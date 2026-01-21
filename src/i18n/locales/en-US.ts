@@ -34,6 +34,7 @@ export default {
     theme: 'Theme',
     themeLight: 'Light',
     themeDark: 'Dark',
+    accentColor: 'Accent Color',
     themeSystem: 'System',
     showOptionPreview: 'Show Option Preview',
     showOptionPreviewHint: 'Display quick preview of options in the task list',

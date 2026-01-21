@@ -1,0 +1,13 @@
+{
+  "name": "danxia",
+  "label": {
+    "zh-CN": "丹霞紫",
+    "en-US": "Danxia",
+    "ja-JP": "丹霞パープル",
+    "ko-KR": "단하 퍼플"
+  },
+  "default": "#c5a0a8",
+  "hover": "#ab838c",
+  "light": "#f3e8eb",
+  "lightDark": "#4a3538"
+}

@@ -34,6 +34,7 @@ import { useTranslation } from 'react-i18next';
 import { loggers } from '@/utils/logger';
 import { useMaaCallbackLogger, useMaaAgentLogger } from '@/utils/useMaaCallbackLogger';
 import { getInterfaceLangKey } from '@/i18n';
+import { applyTheme } from '@/themes';
 
 const log = loggers.app;
 
@@ -490,8 +491,9 @@ function App() {
     if (initialized.current) return;
     initialized.current = true;
 
-    // 设置主题
-    document.documentElement.classList.toggle('dark', theme === 'dark');
+    // 应用默认主题（包括模式和强调色）
+    const { theme: initialTheme, accentColor: initialAccent } = useAppStore.getState();
+    applyTheme(initialTheme, initialAccent);
 
     // 自动加载 interface
     loadInterface();

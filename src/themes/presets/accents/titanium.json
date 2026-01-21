@@ -1,0 +1,13 @@
+{
+  "name": "titanium",
+  "label": {
+    "zh-CN": "钛金属",
+    "en-US": "Titanium",
+    "ja-JP": "チタニウム",
+    "ko-KR": "티타늄"
+  },
+  "default": "#8a9199",
+  "hover": "#6b7680",
+  "light": "#e8eaed",
+  "lightDark": "#2d3339"
+}

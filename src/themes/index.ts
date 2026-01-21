@@ -1,0 +1,185 @@
+/**
+ * 主题管理器
+ * 负责加载、切换和应用主题
+ */
+
+import type { ModeTheme, AccentTheme, ThemeMode, AccentColor, AccentInfo } from './types';
+
+// 静态导入所有主题预设（Vite 需要静态导入才能正确打包）
+import lightTheme from './presets/light.json';
+import darkTheme from './presets/dark.json';
+import emeraldAccent from './presets/accents/emerald.json';
+import lavaAccent from './presets/accents/lava.json';
+import titaniumAccent from './presets/accents/titanium.json';
+import celadonAccent from './presets/accents/celadon.json';
+import rosegoldAccent from './presets/accents/rosegold.json';
+import danxiaAccent from './presets/accents/danxia.json';
+import deepseaAccent from './presets/accents/deepsea.json';
+import cambrianAccent from './presets/accents/cambrian.json';
+import pearlAccent from './presets/accents/pearl.json';
+
+/** 模式主题映射 */
+const modeThemes: Record<ThemeMode, ModeTheme> = {
+  light: lightTheme as ModeTheme,
+  dark: darkTheme as ModeTheme,
+};
+
+/** 强调色主题映射 */
+const accentThemes: Record<AccentColor, AccentTheme> = {
+  emerald: emeraldAccent as AccentTheme,
+  lava: lavaAccent as AccentTheme,
+  titanium: titaniumAccent as AccentTheme,
+  celadon: celadonAccent as AccentTheme,
+  rosegold: rosegoldAccent as AccentTheme,
+  danxia: danxiaAccent as AccentTheme,
+  deepsea: deepseaAccent as AccentTheme,
+  cambrian: cambrianAccent as AccentTheme,
+  pearl: pearlAccent as AccentTheme,
+};
+
+/** 语义色（固定，不随主题变化） */
+const semanticColors = {
+  success: '#22c55e',
+  warning: '#f59e0b',
+  error: '#ef4444',
+};
+
+/** 当前主题状态 */
+let currentMode: ThemeMode = 'light';
+let currentAccent: AccentColor = 'deepsea';
+
+/**
+ * 将主题配置应用到 CSS 变量
+ */
+function applyCSSVariables(mode: ModeTheme, accent: AccentTheme, isDark: boolean): void {
+  const root = document.documentElement;
+
+  // 背景色
+  root.style.setProperty('--color-bg-primary', mode.bg.primary);
+  root.style.setProperty('--color-bg-secondary', mode.bg.secondary);
+  root.style.setProperty('--color-bg-tertiary', mode.bg.tertiary);
+  root.style.setProperty('--color-bg-hover', mode.bg.hover);
+  root.style.setProperty('--color-bg-active', mode.bg.active);
+
+  // 文字色
+  root.style.setProperty('--color-text-primary', mode.text.primary);
+  root.style.setProperty('--color-text-secondary', mode.text.secondary);
+  root.style.setProperty('--color-text-tertiary', mode.text.tertiary);
+  root.style.setProperty('--color-text-muted', mode.text.muted);
+
+  // 边框色
+  root.style.setProperty('--color-border', mode.border.default);
+  root.style.setProperty('--color-border-strong', mode.border.strong);
+
+  // 阴影
+  root.style.setProperty('--shadow-sm', mode.shadow.sm);
+  root.style.setProperty('--shadow-md', mode.shadow.md);
+  root.style.setProperty('--shadow-lg', mode.shadow.lg);
+
+  // 强调色（根据模式选择浅色或深色背景）
+  root.style.setProperty('--color-accent', accent.default);
+  root.style.setProperty('--color-accent-hover', accent.hover);
+  root.style.setProperty('--color-accent-light', isDark ? accent.lightDark : accent.light);
+
+  // 语义色
+  root.style.setProperty('--color-success', semanticColors.success);
+  root.style.setProperty('--color-warning', semanticColors.warning);
+  root.style.setProperty('--color-error', semanticColors.error);
+}
+
+/**
+ * 应用主题
+ * @param mode 主题模式 (light/dark)
+ * @param accent 强调色名称
+ */
+export function applyTheme(mode: ThemeMode, accent: AccentColor): void {
+  const modeTheme = modeThemes[mode];
+  const accentTheme = accentThemes[accent];
+
+  if (!modeTheme || !accentTheme) {
+    console.warn(`Theme not found: mode=${mode}, accent=${accent}`);
+    return;
+  }
+
+  currentMode = mode;
+  currentAccent = accent;
+
+  // 切换 dark class
+  document.documentElement.classList.toggle('dark', mode === 'dark');
+
+  // 应用 CSS 变量
+  applyCSSVariables(modeTheme, accentTheme, mode === 'dark');
+}
+
+/**
+ * 获取当前主题模式
+ */
+export function getCurrentMode(): ThemeMode {
+  return currentMode;
+}
+
+/**
+ * 获取当前强调色
+ */
+export function getCurrentAccent(): AccentColor {
+  return currentAccent;
+}
+
+/**
+ * 获取所有可用的主题模式
+ */
+export function getAvailableModes(): ThemeMode[] {
+  return Object.keys(modeThemes) as ThemeMode[];
+}
+
+/**
+ * 获取所有可用的强调色
+ */
+export function getAvailableAccents(): AccentColor[] {
+  return Object.keys(accentThemes) as AccentColor[];
+}
+
+/**
+ * 获取强调色信息列表（用于 UI 展示）
+ * @param lang 语言代码
+ */
+export function getAccentInfoList(lang: string): AccentInfo[] {
+  const langKey = lang as keyof AccentTheme['label'];
+  return getAvailableAccents().map((name) => {
+    const accent = accentThemes[name];
+    return {
+      name,
+      label: accent.label[langKey] || accent.label['en-US'],
+      color: accent.default,
+    };
+  });
+}
+
+/**
+ * 获取指定强调色的主题配置
+ */
+export function getAccentTheme(accent: AccentColor): AccentTheme | undefined {
+  return accentThemes[accent];
+}
+
+/**
+ * 获取指定模式的主题配置
+ */
+export function getModeTheme(mode: ThemeMode): ModeTheme | undefined {
+  return modeThemes[mode];
+}
+
+// 默认导出便于使用
+export default {
+  applyTheme,
+  getCurrentMode,
+  getCurrentAccent,
+  getAvailableModes,
+  getAvailableAccents,
+  getAccentInfoList,
+  getAccentTheme,
+  getModeTheme,
+};
+
+// 重新导出类型
+export type { ModeTheme, AccentTheme, ThemeMode, AccentColor, AccentInfo } from './types';

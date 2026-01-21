@@ -1,6 +1,7 @@
 // MXU 配置文件结构 (mxu.json)
 
 import type { OptionValue } from './interface';
+import type { AccentColor } from '@/themes/types';
 
 // 定时执行策略
 export interface SchedulePolicy {
@@ -81,6 +82,7 @@ export interface MirrorChyanSettings {
 // 应用设置
 export interface AppSettings {
   theme: 'light' | 'dark';
+  accentColor?: AccentColor; // 强调色
   language: 'zh-CN' | 'en-US' | 'ja-JP' | 'ko-KR';
   windowSize?: WindowSize;
   mirrorChyan?: MirrorChyanSettings;
@@ -118,12 +120,16 @@ export const defaultMirrorChyanSettings: MirrorChyanSettings = {
 // 默认截图帧率
 export const defaultScreenshotFrameRate: ScreenshotFrameRate = '5';
 
+// 默认强调色
+export const defaultAccentColor: AccentColor = 'deepsea';
+
 // 默认配置
 export const defaultConfig: MxuConfig = {
   version: '1.0',
   instances: [],
   settings: {
     theme: 'light',
+    accentColor: defaultAccentColor,
     language: 'zh-CN',
     windowSize: defaultWindowSize,
     mirrorChyan: defaultMirrorChyanSettings,

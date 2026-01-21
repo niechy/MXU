@@ -28,6 +28,7 @@ const MAX_RECENTLY_CLOSED = 30;
 import type { ConnectionStatus, TaskStatus, AdbDevice, Win32Window } from '@/types/maa';
 import { saveConfig } from '@/services/configService';
 import { getInterfaceLangKey } from '@/i18n';
+import { applyTheme, type AccentColor } from '@/themes';
 
 /** 单个任务的运行状态 */
 export type TaskRunStatus = 'idle' | 'pending' | 'running' | 'succeeded' | 'failed';
@@ -50,8 +51,10 @@ export type PageView = 'main' | 'settings';
 interface AppState {
   // 主题和语言
   theme: Theme;
+  accentColor: AccentColor;
   language: Language;
   setTheme: (theme: Theme) => void;
+  setAccentColor: (accent: AccentColor) => void;
   setLanguage: (lang: Language) => void;
 
   // 当前页面
@@ -426,10 +429,15 @@ export const useAppStore = create<AppState>()(
   subscribeWithSelector((set, get) => ({
     // 主题和语言
     theme: 'light',
+    accentColor: 'deepsea',
     language: 'zh-CN',
     setTheme: (theme) => {
       set({ theme });
-      document.documentElement.classList.toggle('dark', theme === 'dark');
+      applyTheme(theme, get().accentColor);
+    },
+    setAccentColor: (accent) => {
+      set({ accentColor: accent });
+      applyTheme(get().theme, accent);
     },
     setLanguage: (lang) => {
       set({ language: lang });
@@ -941,10 +949,13 @@ export const useAppStore = create<AppState>()(
         }
       });
 
+      const accentColor = (config.settings.accentColor as AccentColor) || 'deepsea';
+
       set({
         instances,
         activeInstanceId: instances.length > 0 ? instances[0].id : null,
         theme: config.settings.theme,
+        accentColor,
         language: config.settings.language,
         selectedController,
         selectedResource,
@@ -963,7 +974,8 @@ export const useAppStore = create<AppState>()(
         recentlyClosed: config.recentlyClosed || [],
       });
 
-      document.documentElement.classList.toggle('dark', config.settings.theme === 'dark');
+      // 应用主题（包括强调色）
+      applyTheme(config.settings.theme, accentColor);
       localStorage.setItem('mxu-language', config.settings.language);
     },
 
@@ -1479,6 +1491,7 @@ function generateConfig(): MxuConfig {
     })),
     settings: {
       theme: state.theme,
+      accentColor: state.accentColor,
       language: state.language,
       windowSize: state.windowSize,
       mirrorChyan: state.mirrorChyanSettings,
@@ -1517,6 +1530,7 @@ useAppStore.subscribe(
     instances: state.instances,
     activeInstanceId: state.activeInstanceId,
     theme: state.theme,
+    accentColor: state.accentColor,
     language: state.language,
     windowSize: state.windowSize,
     mirrorChyanSettings: state.mirrorChyanSettings,
