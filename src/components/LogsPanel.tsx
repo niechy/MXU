@@ -1,9 +1,14 @@
 import { useRef, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Trash2, Copy, ChevronUp, ChevronDown } from 'lucide-react';
+import { Trash2, Copy, ChevronUp, ChevronDown, FolderOpen } from 'lucide-react';
 import clsx from 'clsx';
 import { useAppStore, type LogType } from '@/stores/appStore';
 import { ContextMenu, useContextMenu, type MenuItem } from './ContextMenu';
+
+// 检测是否在 Tauri 环境中
+const isTauri = () => {
+  return typeof window !== 'undefined' && '__TAURI__' in window;
+};
 
 export function LogsPanel() {
   const { t } = useTranslation();
@@ -14,6 +19,7 @@ export function LogsPanel() {
     activeInstanceId,
     instanceLogs,
     clearLogs,
+    basePath,
   } = useAppStore();
   const { state: menuState, show: showMenu, hide: hideMenu } = useContextMenu();
 
@@ -38,6 +44,22 @@ export function LogsPanel() {
       .join('\n');
     navigator.clipboard.writeText(text);
   }, [logs]);
+
+  // 打开日志目录
+  const handleOpenLogDir = useCallback(async () => {
+    if (!isTauri() || !basePath) {
+      return;
+    }
+
+    try {
+      const { openPath } = await import('@tauri-apps/plugin-opener');
+      const { join } = await import('@tauri-apps/api/path');
+      const logPath = await join(basePath, 'debug');
+      await openPath(logPath);
+    } catch (err) {
+      console.error('打开日志目录失败:', err);
+    }
+  }, [basePath]);
 
   const getLogColor = (type: LogType) => {
     switch (type) {
@@ -65,6 +87,13 @@ export function LogsPanel() {
 
       const menuItems: MenuItem[] = [
         {
+          id: 'open-log-dir',
+          label: t('settings.openLogDir'),
+          icon: FolderOpen,
+          disabled: !isTauri() || !basePath,
+          onClick: handleOpenLogDir,
+        },
+        {
           id: 'copy',
           label: t('logs.copyAll'),
           icon: Copy,
@@ -90,7 +119,7 @@ export function LogsPanel() {
 
       showMenu(e, menuItems);
     },
-    [t, logs.length, sidePanelExpanded, handleCopyAll, handleClear, toggleSidePanelExpanded, showMenu]
+    [t, logs.length, sidePanelExpanded, basePath, handleOpenLogDir, handleCopyAll, handleClear, toggleSidePanelExpanded, showMenu]
   );
 
   // 根据日志类型获取前缀标签
@@ -130,19 +159,19 @@ export function LogsPanel() {
               <ChevronDown className="w-4 h-4" />
             )}
           </button>
-          {/* 复制全部 */}
+          {/* 打开日志目录 */}
           <button
-            onClick={handleCopyAll}
-            disabled={logs.length === 0}
+            onClick={handleOpenLogDir}
+            disabled={!isTauri() || !basePath}
             className={clsx(
               'p-1.5 rounded-md transition-colors',
-              logs.length === 0
+              !isTauri() || !basePath
                 ? 'text-text-muted cursor-not-allowed'
                 : 'text-text-secondary hover:bg-bg-hover hover:text-text-primary'
             )}
-            title={t('logs.copyAll')}
+            title={t('settings.openLogDir')}
           >
-            <Copy className="w-4 h-4" />
+            <FolderOpen className="w-4 h-4" />
           </button>
           {/* 清空 */}
           <button
