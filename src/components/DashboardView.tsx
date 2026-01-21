@@ -606,7 +606,7 @@ function InstanceCard({ instanceId, instanceName, isActive, onSelect }: Instance
             <img src={screenshotUrl} alt="Screenshot" className="w-full h-full object-contain" />
             {/* 流状态指示器 */}
             {isStreaming && (
-              <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 bg-green-500/80 rounded text-white text-xs">
+              <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 bg-success/80 rounded text-white text-xs">
                 <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                 LIVE
               </div>
@@ -633,7 +633,7 @@ function InstanceCard({ instanceId, instanceName, isActive, onSelect }: Instance
                 : isRunning
                   ? 'bg-red-500/80 hover:bg-red-600/80 text-white'
                   : canRun
-                    ? 'bg-green-500/80 hover:bg-green-600/80 text-white'
+                    ? 'bg-success/80 hover:bg-success text-white'
                     : 'bg-black/30 text-white/50 cursor-not-allowed',
               'opacity-0 group-hover:opacity-100',
             )}
@@ -773,7 +773,7 @@ function InstanceCard({ instanceId, instanceName, isActive, onSelect }: Instance
                 <span className="text-sm font-medium text-text-primary">{instanceName}</span>
                 {/* 流模式指示器 */}
                 {isStreaming && (
-                  <div className="flex items-center gap-1 px-2 py-0.5 bg-green-500/90 rounded text-white text-xs ml-2">
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-success/90 rounded text-white text-xs ml-2">
                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                     LIVE
                   </div>

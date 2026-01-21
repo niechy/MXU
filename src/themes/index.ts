@@ -37,9 +37,13 @@ const accentThemes: Record<AccentColor, AccentTheme> = {
   pearl: pearlAccent as AccentTheme,
 };
 
-/** 语义色（固定，不随主题变化） */
-const semanticColors = {
-  success: '#22c55e',
+/**
+ * 语义色配置
+ * - success: 跟随强调色（用于成功状态、开关等）
+ * - warning/error: 固定颜色（保持语义一致性）
+ * - info: 跟随强调色（用于信息提示）
+ */
+const fixedSemanticColors = {
   warning: '#f59e0b',
   error: '#ef4444',
 };
@@ -82,9 +86,11 @@ function applyCSSVariables(mode: ModeTheme, accent: AccentTheme, isDark: boolean
   root.style.setProperty('--color-accent-light', isDark ? accent.lightDark : accent.light);
 
   // 语义色
-  root.style.setProperty('--color-success', semanticColors.success);
-  root.style.setProperty('--color-warning', semanticColors.warning);
-  root.style.setProperty('--color-error', semanticColors.error);
+  // success 和 info 使用强调色，让 UI 更统一
+  root.style.setProperty('--color-success', accent.default);
+  root.style.setProperty('--color-info', accent.default);
+  root.style.setProperty('--color-warning', fixedSemanticColors.warning);
+  root.style.setProperty('--color-error', fixedSemanticColors.error);
 }
 
 /**

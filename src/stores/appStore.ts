@@ -429,7 +429,7 @@ export const useAppStore = create<AppState>()(
   subscribeWithSelector((set, get) => ({
     // 主题和语言
     theme: 'light',
-    accentColor: 'deepsea',
+    accentColor: 'emerald',
     language: 'zh-CN',
     setTheme: (theme) => {
       set({ theme });

@@ -459,7 +459,7 @@ export function DeviceSelector({
         {getControllerIcon()}
         <span>{getControllerTypeName()}</span>
         {isConnected && (
-          <span className="flex items-center gap-1 text-green-500 text-xs">
+          <span className="flex items-center gap-1 text-success text-xs">
             <Wifi className="w-3 h-3" />
             {t('controller.connected')}
           </span>
@@ -596,7 +596,7 @@ export function DeviceSelector({
       {isConnected && (
         <button
           onClick={handleDisconnect}
-          className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-red-500/10 text-red-500 hover:bg-red-500/20 transition-colors"
+          className="w-full flex items-center justify-center gap-2 px-4 py-2 rounded-lg text-sm font-medium bg-error/10 text-error hover:bg-error/20 transition-colors"
         >
           <WifiOff className="w-4 h-4" />
           {t('controller.disconnect')}
@@ -639,7 +639,7 @@ export function DeviceSelector({
 
       {/* 错误提示 */}
       {error && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 text-red-500 text-sm">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-error/10 text-error text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{error}</span>
         </div>

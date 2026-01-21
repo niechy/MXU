@@ -6,8 +6,8 @@
     "ja-JP": "溶岩オレンジ",
     "ko-KR": "용암 오렌지"
   },
-  "default": "#e85d20",
-  "hover": "#cc4d15",
-  "light": "#fde5d8",
-  "lightDark": "#5c2410"
+  "default": "#E65A1E",
+  "hover": "#C54D1A",
+  "light": "#FDEEE8",
+  "lightDark": "#5C240C"
 }

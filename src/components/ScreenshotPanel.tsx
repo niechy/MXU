@@ -495,7 +495,7 @@ export function ScreenshotPanel() {
               !instanceId
                 ? 'text-text-muted cursor-not-allowed'
                 : isStreaming
-                  ? 'text-green-500 hover:bg-bg-tertiary'
+                  ? 'text-success hover:bg-bg-tertiary'
                   : 'text-text-secondary hover:bg-bg-tertiary hover:text-text-primary',
             )}
             title={isStreaming ? t('screenshot.stopStream') : t('screenshot.startStream')}
@@ -545,7 +545,7 @@ export function ScreenshotPanel() {
                 />
                 {/* 流模式指示器 */}
                 {isStreaming && (
-                  <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 bg-green-500/80 rounded text-white text-xs">
+                  <div className="absolute top-2 right-2 flex items-center gap-1 px-1.5 py-0.5 bg-success/80 rounded text-white text-xs">
                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                     LIVE
                   </div>
@@ -555,7 +555,7 @@ export function ScreenshotPanel() {
               <div className="flex flex-col items-center gap-2 text-text-muted">
                 <Monitor className="w-10 h-10 opacity-30" />
                 {error ? (
-                  <span className="text-xs text-red-500">{error}</span>
+                  <span className="text-xs text-error">{error}</span>
                 ) : (
                   <>
                     <span className="text-xs">{t('screenshot.noScreenshot')}</span>
@@ -589,7 +589,7 @@ export function ScreenshotPanel() {
                 </span>
                 {/* 流模式指示器 */}
                 {isStreaming && (
-                  <div className="flex items-center gap-1 px-2 py-0.5 bg-green-500/90 rounded text-white text-xs ml-2">
+                  <div className="flex items-center gap-1 px-2 py-0.5 bg-success/90 rounded text-white text-xs ml-2">
                     <span className="w-1.5 h-1.5 bg-white rounded-full animate-pulse" />
                     LIVE
                   </div>

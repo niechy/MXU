@@ -121,7 +121,7 @@ export const defaultMirrorChyanSettings: MirrorChyanSettings = {
 export const defaultScreenshotFrameRate: ScreenshotFrameRate = '5';
 
 // 默认强调色
-export const defaultAccentColor: AccentColor = 'deepsea';
+export const defaultAccentColor: AccentColor = 'emerald';
 
 // 默认配置
 export const defaultConfig: MxuConfig = {

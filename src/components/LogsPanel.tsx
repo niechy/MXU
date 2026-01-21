@@ -64,17 +64,17 @@ export function LogsPanel() {
   const getLogColor = (type: LogType) => {
     switch (type) {
       case 'success':
-        return 'text-green-500 dark:text-green-400';
+        return 'text-success'; // 跟随主题强调色
       case 'warning':
-        return 'text-amber-500 dark:text-amber-400';
+        return 'text-warning';
       case 'error':
-        return 'text-red-500 dark:text-red-400';
+        return 'text-error';
       case 'agent':
-        return 'text-gray-400 dark:text-gray-500';
+        return 'text-text-muted';
       case 'focus':
-        return 'text-orange-500 dark:text-orange-400';
+        return 'text-accent'; // 跟随主题强调色
       case 'info':
-        return 'text-blue-500 dark:text-blue-400';
+        return 'text-info'; // 跟随主题强调色
       default:
         return 'text-text-secondary';
     }

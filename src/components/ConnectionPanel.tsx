@@ -1013,7 +1013,7 @@ export function ConnectionPanel() {
           </span>
         ) : isConnected ? (
           <span
-            className="flex items-center gap-1 text-green-500 text-xs"
+            className="flex items-center gap-1 text-success text-xs"
             title={getDeviceStatusText()}
           >
             <Wifi className="w-3 h-3" />
@@ -1035,7 +1035,7 @@ export function ConnectionPanel() {
         )}
         {isResourceLoaded && currentResource && (
           <span
-            className="flex items-center gap-1 text-green-500 text-xs"
+            className="flex items-center gap-1 text-success text-xs"
             title={getResourceDisplayName(currentResource)}
           >
             <CheckCircle className="w-3 h-3" />
@@ -1140,7 +1140,7 @@ export function ConnectionPanel() {
                 className={clsx(
                   'flex items-center justify-center px-3 py-1.5 rounded-md border transition-colors',
                   isConnected
-                    ? 'bg-green-500/20 border-green-500/50 cursor-not-allowed'
+                    ? 'bg-success/20 border-success/50 cursor-not-allowed'
                     : isConnecting || !canConnect()
                       ? 'bg-bg-tertiary border-border opacity-50 cursor-not-allowed'
                       : 'bg-accent border-accent text-white hover:bg-accent-hover',
@@ -1150,7 +1150,7 @@ export function ConnectionPanel() {
                 {isConnecting ? (
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-text-secondary" />
                 ) : isConnected ? (
-                  <Check className="w-3.5 h-3.5 text-green-500" />
+                  <Check className="w-3.5 h-3.5 text-success" />
                 ) : (
                   <Wifi className="w-3.5 h-3.5" />
                 )}
@@ -1222,14 +1222,14 @@ export function ConnectionPanel() {
                         >
                           <div className="min-w-0 flex-1 flex items-center gap-2">
                             {item.isHistorical && (
-                              <History className="w-3.5 h-3.5 text-amber-500 flex-shrink-0" />
+                              <History className="w-3.5 h-3.5 text-warning flex-shrink-0" />
                             )}
                             <div className="min-w-0 flex-1">
                               <div className="text-sm text-text-primary truncate">{item.name}</div>
                               <div
                                 className={clsx(
                                   'text-xs truncate',
-                                  item.isHistorical ? 'text-amber-500' : 'text-text-muted',
+                                  item.isHistorical ? 'text-warning' : 'text-text-muted',
                                 )}
                               >
                                 {item.description}
@@ -1274,7 +1274,7 @@ export function ConnectionPanel() {
 
           {/* 设备错误提示 */}
           {deviceError && (
-            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-red-500/10 text-red-500 text-xs">
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-error/10 text-error text-xs">
               <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{deviceError}</span>
             </div>
@@ -1319,7 +1319,7 @@ export function ConnectionPanel() {
                   <Loader2 className="w-3.5 h-3.5 animate-spin text-accent flex-shrink-0" />
                 )}
                 {!isLoadingResource && isResourceLoaded && (
-                  <CheckCircle className="w-3.5 h-3.5 text-green-500 flex-shrink-0" />
+                  <CheckCircle className="w-3.5 h-3.5 text-success flex-shrink-0" />
                 )}
               </div>
               <ChevronDown
@@ -1372,7 +1372,7 @@ export function ConnectionPanel() {
 
           {/* 资源错误提示 */}
           {resourceError && (
-            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-red-500/10 text-red-500 text-xs">
+            <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-md bg-error/10 text-error text-xs">
               <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
               <span>{resourceError}</span>
             </div>

@@ -219,7 +219,7 @@ export function ResourceSelector({
           </span>
         )}
         {!isLoading && isLoaded && (
-          <span className="flex items-center gap-1 text-green-500 text-xs">
+          <span className="flex items-center gap-1 text-success text-xs">
             <CheckCircle className="w-3 h-3" />
             {t('resource.loaded')}
           </span>
@@ -301,7 +301,7 @@ export function ResourceSelector({
 
       {/* 错误提示 */}
       {error && (
-        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-red-500/10 text-red-500 text-sm">
+        <div className="flex items-center gap-2 px-3 py-2 rounded-lg bg-error/10 text-error text-sm">
           <AlertCircle className="w-4 h-4 flex-shrink-0" />
           <span>{error}</span>
         </div>

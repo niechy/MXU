@@ -6,8 +6,8 @@
     "ja-JP": "エメラルド",
     "ko-KR": "에메랄드"
   },
-  "default": "#1e8c5a",
-  "hover": "#167048",
-  "light": "#d4f0e3",
-  "lightDark": "#0d3d27"
+  "default": "#008B45",
+  "hover": "#007038",
+  "light": "#E6F3EC",
+  "lightDark": "#003D1E"
 }

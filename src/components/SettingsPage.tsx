@@ -1185,7 +1185,7 @@ export function SettingsPage() {
                       href="https://maafw.xyz"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline"
+                      className="text-accent hover:underline"
                     >
                       MaaFramework
                     </a>
@@ -1194,7 +1194,7 @@ export function SettingsPage() {
                       href="https://github.com/MistEO/MXU"
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="text-blue-500 hover:underline"
+                      className="text-accent hover:underline"
                     >
                       MXU
                     </a>
