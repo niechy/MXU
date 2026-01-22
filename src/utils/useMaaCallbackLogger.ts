@@ -30,6 +30,32 @@ function isConnectAction(details: MaaCallbackDetails): boolean {
   return details.action === 'Connect' || details.action === 'connect';
 }
 
+// 从当前实例配置推断控制器类型和名称（用于解决回调时序问题）
+function inferCtrlInfoFromInstance(instanceId: string): {
+  type: 'device' | 'window' | undefined;
+  name: string | undefined;
+} {
+  const state = useAppStore.getState();
+  const instance = state.instances.find((i) => i.id === instanceId);
+  const savedDevice = instance?.savedDevice;
+  const controllerName = state.selectedController[instanceId];
+
+  if (!controllerName) return { type: undefined, name: undefined };
+
+  const controller = state.projectInterface?.controller?.find((c) => c.name === controllerName);
+  if (!controller) return { type: undefined, name: undefined };
+
+  // 根据控制器类型确定类型和名称
+  if (controller.type === 'Win32' || controller.type === 'Gamepad') {
+    return { type: 'window', name: savedDevice?.windowName };
+  } else if (controller.type === 'Adb') {
+    return { type: 'device', name: savedDevice?.adbDeviceName };
+  } else if (controller.type === 'PlayCover') {
+    return { type: 'device', name: savedDevice?.playcoverAddress };
+  }
+  return { type: 'device', name: undefined };
+}
+
 export function useMaaCallbackLogger() {
   const { t } = useTranslation();
   const { addLog } = useAppStore();
@@ -90,7 +116,8 @@ function handleCallback(
   addLog: (instanceId: string, log: { type: LogType; message: string }) => void,
 ) {
   // 获取 ID 名称映射函数
-  const { getCtrlName, getResName, getTaskName, getTaskNameByEntry } = useAppStore.getState();
+  const { getCtrlName, getCtrlType, getResName, getTaskName, getTaskNameByEntry } =
+    useAppStore.getState();
 
   // 首先检查是否有 focus 字段，有则优先处理 focus 消息
   const focus = details.focus as Record<string, string> | undefined;
@@ -106,30 +133,61 @@ function handleCallback(
     // ==================== 控制器连接消息 ====================
     case 'Controller.Action.Starting':
       if (isConnectAction(details)) {
-        const deviceName = details.ctrl_id !== undefined ? getCtrlName(details.ctrl_id) : undefined;
+        // 优先从注册信息获取，未注册时从实例配置推断（解决回调时序问题）
+        const registeredName =
+          details.ctrl_id !== undefined ? getCtrlName(details.ctrl_id) : undefined;
+        const registeredType =
+          details.ctrl_id !== undefined ? getCtrlType(details.ctrl_id) : undefined;
+        const inferred = inferCtrlInfoFromInstance(instanceId);
+        const deviceName = registeredName || inferred.name || '';
+        const ctrlType = registeredType || inferred.type;
+        const targetText =
+          ctrlType === 'window'
+            ? t('logs.messages.targetWindow')
+            : t('logs.messages.targetDevice');
         addLog(instanceId, {
           type: 'info',
-          message: t('logs.messages.connecting', { device: deviceName || '' }),
+          message: `${t('logs.messages.connecting', { target: targetText })} ${deviceName}`,
         });
       }
       break;
 
     case 'Controller.Action.Succeeded':
       if (isConnectAction(details)) {
-        const deviceName = details.ctrl_id !== undefined ? getCtrlName(details.ctrl_id) : undefined;
+        const registeredName =
+          details.ctrl_id !== undefined ? getCtrlName(details.ctrl_id) : undefined;
+        const registeredType =
+          details.ctrl_id !== undefined ? getCtrlType(details.ctrl_id) : undefined;
+        const inferred = inferCtrlInfoFromInstance(instanceId);
+        const deviceName = registeredName || inferred.name || '';
+        const ctrlType = registeredType || inferred.type;
+        const targetText =
+          ctrlType === 'window'
+            ? t('logs.messages.targetWindow')
+            : t('logs.messages.targetDevice');
         addLog(instanceId, {
           type: 'success',
-          message: t('logs.messages.connected', { device: deviceName || '' }),
+          message: `${t('logs.messages.connected', { target: targetText })} ${deviceName}`,
         });
       }
       break;
 
     case 'Controller.Action.Failed':
       if (isConnectAction(details)) {
-        const deviceName = details.ctrl_id !== undefined ? getCtrlName(details.ctrl_id) : undefined;
+        const registeredName =
+          details.ctrl_id !== undefined ? getCtrlName(details.ctrl_id) : undefined;
+        const registeredType =
+          details.ctrl_id !== undefined ? getCtrlType(details.ctrl_id) : undefined;
+        const inferred = inferCtrlInfoFromInstance(instanceId);
+        const deviceName = registeredName || inferred.name || '';
+        const ctrlType = registeredType || inferred.type;
+        const targetText =
+          ctrlType === 'window'
+            ? t('logs.messages.targetWindow')
+            : t('logs.messages.targetDevice');
         addLog(instanceId, {
           type: 'error',
-          message: t('logs.messages.connectFailed', { device: deviceName || '' }),
+          message: `${t('logs.messages.connectFailed', { target: targetText })} ${deviceName}`,
         });
       }
       break;

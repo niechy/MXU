@@ -294,14 +294,16 @@ interface AppState {
 
   // 回调 ID 与名称的映射（用于日志显示）
   ctrlIdToName: Record<number, string>;
+  ctrlIdToType: Record<number, 'device' | 'window'>; // 控制器类型：设备或窗口
   resIdToName: Record<number, string>;
   taskIdToName: Record<number, string>;
   entryToTaskName: Record<string, string>; // entry -> 任务显示名（解决时序问题）
-  registerCtrlIdName: (ctrlId: number, name: string) => void;
+  registerCtrlIdName: (ctrlId: number, name: string, type: 'device' | 'window') => void;
   registerResIdName: (resId: number, name: string) => void;
   registerTaskIdName: (taskId: number, name: string) => void;
   registerEntryTaskName: (entry: string, name: string) => void;
   getCtrlName: (ctrlId: number) => string | undefined;
+  getCtrlType: (ctrlId: number) => 'device' | 'window' | undefined;
   getResName: (resId: number) => string | undefined;
   getTaskName: (taskId: number) => string | undefined;
   getTaskNameByEntry: (entry: string) => string | undefined;
@@ -1436,13 +1438,15 @@ export const useAppStore = create<AppState>()(
 
     // 回调 ID 与名称的映射
     ctrlIdToName: {},
+    ctrlIdToType: {},
     resIdToName: {},
     taskIdToName: {},
     entryToTaskName: {},
 
-    registerCtrlIdName: (ctrlId, name) =>
+    registerCtrlIdName: (ctrlId, name, type) =>
       set((state) => ({
         ctrlIdToName: { ...state.ctrlIdToName, [ctrlId]: name },
+        ctrlIdToType: { ...state.ctrlIdToType, [ctrlId]: type },
       })),
 
     registerResIdName: (resId, name) =>
@@ -1461,6 +1465,7 @@ export const useAppStore = create<AppState>()(
       })),
 
     getCtrlName: (ctrlId) => get().ctrlIdToName[ctrlId],
+    getCtrlType: (ctrlId) => get().ctrlIdToType[ctrlId],
     getResName: (resId) => get().resIdToName[resId],
     getTaskName: (taskId) => get().taskIdToName[taskId],
     getTaskNameByEntry: (entry) => get().entryToTaskName[entry],

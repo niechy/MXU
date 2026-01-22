@@ -487,14 +487,16 @@ export function ConnectionPanel() {
   };
 
   // 连接控制器的内部实现（使用缓存机制解决竞态问题）
-  const connectControllerInternal = async (config: ControllerConfig, deviceName: string) => {
+  const connectControllerInternal = async (
+    config: ControllerConfig,
+    deviceName: string,
+    targetType: 'device' | 'window',
+  ) => {
     const agentPath = `${basePath}/MaaAgentBinary`;
     const ctrlId = await maaService.connectController(instanceId, config, agentPath);
 
-    // 注册 ctrl_id 与设备名的映射，用于日志显示
-    if (deviceName) {
-      registerCtrlIdName(ctrlId, deviceName);
-    }
+    // 注册 ctrl_id 与设备/窗口名及类型的映射，用于日志显示
+    registerCtrlIdName(ctrlId, deviceName || '', targetType);
 
     // 等待连接结果（先查缓存，没有则轮询等待）
     const result = await waitForCtrlResult(ctrlId);
@@ -528,6 +530,7 @@ export function ConnectionPanel() {
 
       let config: ControllerConfig;
       let deviceName = '';
+      let targetType: 'device' | 'window' = 'device';
 
       if (controllerType === 'Adb' && selectedAdbDevice) {
         config = {
@@ -539,6 +542,7 @@ export function ConnectionPanel() {
           config: selectedAdbDevice.config,
         };
         deviceName = selectedAdbDevice.name || selectedAdbDevice.address;
+        targetType = 'device';
       } else if (controllerType === 'Win32' && selectedWindow) {
         config = {
           type: 'Win32',
@@ -548,6 +552,7 @@ export function ConnectionPanel() {
           keyboard_method: parseWin32InputMethod(currentController.win32?.keyboard || ''),
         };
         deviceName = selectedWindow.window_name || selectedWindow.class_name;
+        targetType = 'window';
       } else if (controllerType === 'PlayCover') {
         // 保存 PlayCover 地址到实例配置
         setInstanceSavedDevice(instanceId, { playcoverAddress });
@@ -556,17 +561,19 @@ export function ConnectionPanel() {
           address: playcoverAddress,
         };
         deviceName = playcoverAddress;
+        targetType = 'device';
       } else if (controllerType === 'Gamepad' && selectedWindow) {
         config = {
           type: 'Gamepad',
           handle: selectedWindow.handle,
         };
         deviceName = selectedWindow.window_name || selectedWindow.class_name;
+        targetType = 'window';
       } else {
         throw new Error(t('controller.selectDevice'));
       }
 
-      await connectControllerInternal(config, deviceName);
+      await connectControllerInternal(config, deviceName, targetType);
     } catch (err) {
       setDeviceError(err instanceof Error ? err.message : t('controller.connectionFailed'));
       setIsConnected(false);
@@ -710,6 +717,7 @@ export function ConnectionPanel() {
       if (savedDevice?.adbDeviceName) {
         return savedDevice.adbDeviceName;
       }
+      return t('controller.selectDevice');
     }
     if (controllerType === 'Win32' || controllerType === 'Gamepad') {
       if (selectedWindow) {
@@ -719,6 +727,7 @@ export function ConnectionPanel() {
       if (savedDevice?.windowName) {
         return savedDevice.windowName;
       }
+      return t('controller.selectWindow');
     }
     return t('controller.selectDevice');
   };
@@ -758,7 +767,7 @@ export function ConnectionPanel() {
         config: device.config,
       };
 
-      await connectControllerInternal(config, device.name || device.address);
+      await connectControllerInternal(config, device.name || device.address, 'device');
     } catch (err) {
       setDeviceError(err instanceof Error ? err.message : t('controller.connectionFailed'));
       setIsConnected(false);
@@ -809,7 +818,7 @@ export function ConnectionPanel() {
         };
       }
 
-      await connectControllerInternal(config, win.window_name || win.class_name);
+      await connectControllerInternal(config, win.window_name || win.class_name, 'window');
     } catch (err) {
       setDeviceError(err instanceof Error ? err.message : t('controller.connectionFailed'));
       setIsConnected(false);
@@ -1246,7 +1255,11 @@ export function ConnectionPanel() {
                       ))
                     ) : (
                       <div className="px-3 py-3 text-center text-text-muted text-xs">
-                        {isSearching ? t('common.loading') : t('controller.noDevices')}
+                        {isSearching
+                          ? t('common.loading')
+                          : controllerType === 'Win32' || controllerType === 'Gamepad'
+                            ? t('controller.noWindows')
+                            : t('controller.noDevices')}
                       </div>
                     )}
                   </div>

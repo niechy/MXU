@@ -354,18 +354,20 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
       const ctrlId = await maaService.connectController(instanceId, config, agentPath);
       pendingCtrlIdRef.current = ctrlId;
 
-      // 注册 ctrl_id 与设备名的映射
+      // 注册 ctrl_id 与设备名/类型的映射
       let deviceName = '';
+      let targetType: 'device' | 'window' = 'device';
       if (savedDevice?.adbDeviceName) {
         deviceName = savedDevice.adbDeviceName;
+        targetType = 'device';
       } else if (savedDevice?.windowName) {
         deviceName = savedDevice.windowName;
+        targetType = 'window';
       } else if (savedDevice?.playcoverAddress) {
         deviceName = savedDevice.playcoverAddress;
+        targetType = 'device';
       }
-      if (deviceName) {
-        registerCtrlIdName(ctrlId, deviceName);
-      }
+      registerCtrlIdName(ctrlId, deviceName, targetType);
 
       // 等待连接回调
       return new Promise<boolean>((resolve) => {
@@ -575,18 +577,20 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
           const agentPath = `${basePath}/MaaAgentBinary`;
           const ctrlId = await maaService.connectController(targetId, config, agentPath);
 
-          // 注册 ctrl_id 与设备名的映射
+          // 注册 ctrl_id 与设备名/类型的映射
           let deviceName = '';
+          let targetType: 'device' | 'window' = 'device';
           if (savedDevice?.adbDeviceName) {
             deviceName = savedDevice.adbDeviceName;
+            targetType = 'device';
           } else if (savedDevice?.windowName) {
             deviceName = savedDevice.windowName;
+            targetType = 'window';
           } else if (savedDevice?.playcoverAddress) {
             deviceName = savedDevice.playcoverAddress;
+            targetType = 'device';
           }
-          if (deviceName) {
-            registerCtrlIdName(ctrlId, deviceName);
-          }
+          registerCtrlIdName(ctrlId, deviceName, targetType);
 
           // 等待连接完成
           const connectResult = await new Promise<boolean>((resolve) => {

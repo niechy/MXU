@@ -141,7 +141,9 @@ export default {
     connect: 'Connect',
     disconnect: 'Disconnect',
     selectDevice: 'Select a device',
+    selectWindow: 'Select a window',
     noDevices: 'No devices found',
+    noWindows: 'No windows found',
     playcoverHint: 'Enter PlayCover app listen address',
     lastSelected: 'Last selected · Click to search',
     savedDeviceNotFound: 'Previous device not found, please check connection or select another',
@@ -202,9 +204,11 @@ export default {
     // Log messages
     messages: {
       // Connection messages
-      connecting: 'Connecting to device {{device}}...',
-      connected: 'Device connected: {{device}}',
-      connectFailed: 'Device connection failed: {{device}}',
+      connecting: 'Connecting to {{target}}...',
+      connected: '{{target}} connected:',
+      connectFailed: '{{target}} connection failed:',
+      targetDevice: 'device',
+      targetWindow: 'window',
       // Resource loading messages
       loadingResource: 'Loading resource: {{name}}',
       resourceLoaded: 'Resource loaded: {{name}}',

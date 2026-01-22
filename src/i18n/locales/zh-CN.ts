@@ -140,7 +140,9 @@ export default {
     connect: '连接',
     disconnect: '断开连接',
     selectDevice: '请选择设备',
+    selectWindow: '请选择窗口',
     noDevices: '未找到设备',
+    noWindows: '未找到窗口',
     playcoverHint: '输入 PlayCover 应用监听地址',
     lastSelected: '上次选择 · 点击搜索',
     savedDeviceNotFound: '未找到上次的设备，请检查连接或重新选择',
@@ -201,9 +203,11 @@ export default {
     // 日志消息
     messages: {
       // 连接消息
-      connecting: '正在连接设备 {{device}}...',
-      connected: '设备连接成功: {{device}}',
-      connectFailed: '设备连接失败: {{device}}',
+      connecting: '正在连接{{target}} ...',
+      connected: '{{target}}连接成功:',
+      connectFailed: '{{target}}连接失败:',
+      targetDevice: '设备',
+      targetWindow: '窗口',
       // 资源加载消息
       loadingResource: '正在加载资源: {{name}}',
       resourceLoaded: '资源加载成功: {{name}}',

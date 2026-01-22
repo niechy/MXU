@@ -247,18 +247,20 @@ export function DeviceSelector({
       const agentPath = `${basePath}/MaaAgentBinary`;
       const ctrlId = await maaService.connectController(instanceId, config, agentPath);
 
-      // 注册 ctrl_id 与设备名的映射
+      // 注册 ctrl_id 与设备名/类型的映射
       let deviceName = '';
+      let targetType: 'device' | 'window' = 'device';
       if (controllerType === 'Adb' && selectedAdbDevice) {
         deviceName = selectedAdbDevice.name || selectedAdbDevice.address;
+        targetType = 'device';
       } else if ((controllerType === 'Win32' || controllerType === 'Gamepad') && selectedWindow) {
         deviceName = selectedWindow.window_name || selectedWindow.class_name;
+        targetType = 'window';
       } else if (controllerType === 'PlayCover') {
         deviceName = playcoverAddress;
+        targetType = 'device';
       }
-      if (deviceName) {
-        registerCtrlIdName(ctrlId, deviceName);
-      }
+      registerCtrlIdName(ctrlId, deviceName, targetType);
 
       // 记录等待中的 ctrl_id，后续由回调处理完成状态
       setPendingCtrlId(ctrlId);
@@ -323,8 +325,8 @@ export function DeviceSelector({
       const agentPath = `${basePath}/MaaAgentBinary`;
       const ctrlId = await maaService.connectController(instanceId, config, agentPath);
 
-      // 注册 ctrl_id 与设备名的映射
-      registerCtrlIdName(ctrlId, device.name || device.address);
+      // 注册 ctrl_id 与设备名/类型的映射
+      registerCtrlIdName(ctrlId, device.name || device.address, 'device');
 
       // 记录等待中的 ctrl_id，后续由回调处理完成状态
       setPendingCtrlId(ctrlId);
@@ -373,8 +375,8 @@ export function DeviceSelector({
       const agentPath = `${basePath}/MaaAgentBinary`;
       const ctrlId = await maaService.connectController(instanceId, config, agentPath);
 
-      // 注册 ctrl_id 与设备名的映射
-      registerCtrlIdName(ctrlId, win.window_name || win.class_name);
+      // 注册 ctrl_id 与窗口名/类型的映射
+      registerCtrlIdName(ctrlId, win.window_name || win.class_name, 'window');
 
       // 记录等待中的 ctrl_id，后续由回调处理完成状态
       setPendingCtrlId(ctrlId);

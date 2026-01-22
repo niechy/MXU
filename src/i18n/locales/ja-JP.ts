@@ -141,7 +141,9 @@ export default {
     connect: '接続',
     disconnect: '切断',
     selectDevice: 'デバイスを選択してください',
+    selectWindow: 'ウィンドウを選択してください',
     noDevices: 'デバイスが見つかりません',
+    noWindows: 'ウィンドウが見つかりません',
     playcoverHint: 'PlayCover アプリのリッスンアドレスを入力',
     lastSelected: '前回の選択 · クリックして検索',
     savedDeviceNotFound:
@@ -203,9 +205,11 @@ export default {
     // ログメッセージ
     messages: {
       // 接続メッセージ
-      connecting: 'デバイス {{device}} に接続中...',
-      connected: 'デバイスに接続しました: {{device}}',
-      connectFailed: 'デバイス接続に失敗しました: {{device}}',
+      connecting: '{{target}}に接続中...',
+      connected: '{{target}}に接続しました:',
+      connectFailed: '{{target}}接続に失敗しました:',
+      targetDevice: 'デバイス',
+      targetWindow: 'ウィンドウ',
       // リソース読み込みメッセージ
       loadingResource: 'リソースを読み込み中: {{name}}',
       resourceLoaded: 'リソースを読み込みました: {{name}}',
