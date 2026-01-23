@@ -1122,7 +1122,7 @@ export function ConnectionPanel() {
         onClick={() => setConnectionPanelExpanded(!connectionPanelExpanded)}
         className={clsx(
           'w-full flex items-center justify-between px-3 py-2 hover:bg-bg-hover transition-colors',
-          !connectionPanelExpanded ? 'rounded-lg' : 'rounded-t-lg border-b border-border',
+          connectionPanelExpanded ? 'rounded-t-lg' : 'rounded-lg',
         )}
       >
         <div className="flex items-center gap-2">
@@ -1146,6 +1146,8 @@ export function ConnectionPanel() {
         style={{ gridTemplateRows: connectionPanelExpanded ? '1fr' : '0fr' }}
       >
         <div className="overflow-hidden min-h-0">
+          {/* 分隔线放在 overflow-hidden 内部，避免展开瞬间闪烁 */}
+          <div className="border-t border-border" />
           <div className="p-3 space-y-3">
           {/* 控制器选择 - 标题和按钮同一行 */}
           {controllers.length > 1 && (

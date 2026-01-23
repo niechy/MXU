@@ -485,7 +485,7 @@ export function ScreenshotPanel() {
         }}
         className={clsx(
           'w-full flex items-center justify-between px-3 py-2 hover:bg-bg-hover transition-colors cursor-pointer',
-          !screenshotPanelExpanded ? 'rounded-lg' : 'rounded-t-lg border-b border-border',
+          screenshotPanelExpanded ? 'rounded-t-lg' : 'rounded-lg',
         )}
       >
         <div className="flex items-center gap-2">
@@ -545,6 +545,8 @@ export function ScreenshotPanel() {
         style={{ gridTemplateRows: screenshotPanelExpanded ? '1fr' : '0fr' }}
       >
         <div className="overflow-hidden min-h-0">
+          {/* 分隔线放在 overflow-hidden 内部，避免展开瞬间闪烁 */}
+          <div className="border-t border-border" />
           <div className="p-3">
           {/* 截图区域 */}
           <div
