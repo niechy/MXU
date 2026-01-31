@@ -85,7 +85,15 @@ export function useResourceLoading({
         return false;
       }
     },
-    [instanceId, basePath, translations, currentController, setInstanceResourceLoaded, registerResIdName, t],
+    [
+      instanceId,
+      basePath,
+      translations,
+      currentController,
+      setInstanceResourceLoaded,
+      registerResIdName,
+      t,
+    ],
   );
 
   // 切换资源：销毁旧资源后加载新资源
