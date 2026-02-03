@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Bug, RefreshCw, Maximize2, FolderOpen, ScrollText, Trash2, Network } from 'lucide-react';
+import { Bug, RefreshCw, Maximize2, FolderOpen, ScrollText, Trash2, Network, Archive } from 'lucide-react';
 import clsx from 'clsx';
 
 import { useAppStore } from '@/stores/appStore';
@@ -9,6 +9,7 @@ import { clearAllCache, getCacheStats } from '@/services/cacheService';
 import { maaService } from '@/services/maaService';
 import { loggers } from '@/utils/logger';
 import { isTauri } from '@/utils/windowUtils';
+import { ExportLogsModal } from './ExportLogsModal';
 
 export function DebugSection() {
   const { t } = useTranslation();
@@ -36,6 +37,12 @@ export function DebugSection() {
     tauriVersion: string;
   } | null>(null);
   const [cacheEntryCount, setCacheEntryCount] = useState<number | null>(null);
+  const [exportModal, setExportModal] = useState<{
+    show: boolean;
+    status: 'exporting' | 'success' | 'error';
+    zipPath?: string;
+    error?: string;
+  }>({ show: false, status: 'exporting' });
   const [, setDebugLog] = useState<string[]>([]);
 
   const addDebugLog = useCallback((msg: string) => {
@@ -194,6 +201,36 @@ export function DebugSection() {
     }
   };
 
+  // 调试：导出日志
+  const handleExportLogs = async () => {
+    if (!isTauri()) {
+      addDebugLog('仅 Tauri 环境支持导出日志');
+      return;
+    }
+
+    setExportModal({ show: true, status: 'exporting' });
+    try {
+      const { invoke } = await import('@tauri-apps/api/core');
+      const zipPath = await invoke<string>('export_logs');
+      loggers.ui.info('日志已导出:', zipPath);
+
+      setExportModal({ show: true, status: 'success', zipPath });
+
+      // 打开所在目录
+      const { openPath } = await import('@tauri-apps/plugin-opener');
+      const { dirname } = await import('@tauri-apps/api/path');
+      const dir = await dirname(zipPath);
+      await openPath(dir);
+    } catch (err) {
+      loggers.ui.error('导出日志失败:', err);
+      setExportModal({
+        show: true,
+        status: 'error',
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  };
+
   return (
     <section id="section-debug" className="space-y-4 scroll-mt-4">
       <h2 className="text-sm font-semibold text-text-primary uppercase tracking-wider flex items-center gap-2">
@@ -292,6 +329,15 @@ export function DebugSection() {
             {t('debug.openLogDir')}
           </button>
           <button
+            onClick={handleExportLogs}
+            disabled={exportModal.show && exportModal.status === 'exporting'}
+            className="flex items-center gap-2 px-3 py-2 text-sm bg-bg-tertiary hover:bg-bg-hover rounded-lg transition-colors disabled:opacity-50"
+            title={t('debug.exportLogsHint')}
+          >
+            <Archive className="w-4 h-4" />
+            {t('debug.exportLogs')}
+          </button>
+          <button
             onClick={handleClearCache}
             className="flex items-center gap-2 px-3 py-2 text-sm bg-bg-tertiary hover:bg-bg-hover rounded-lg transition-colors"
             title={
@@ -383,6 +429,15 @@ export function DebugSection() {
           </button>
         </div>
       </div>
+
+      {/* 导出日志 Modal */}
+      <ExportLogsModal
+        show={exportModal.show}
+        status={exportModal.status}
+        zipPath={exportModal.zipPath}
+        error={exportModal.error}
+        onClose={() => setExportModal({ show: false, status: 'exporting' })}
+      />
     </section>
   );
 }
