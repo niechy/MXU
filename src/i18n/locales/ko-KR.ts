@@ -304,9 +304,11 @@ export default {
     // 로그 메시지
     messages: {
       // 연결 메시지
-      connecting: '기기 {{device}}에 연결 중...',
-      connected: '기기에 연결됨: {{device}}',
-      connectFailed: '기기 연결 실패: {{device}}',
+      connecting: '{{target}}에 연결 중...',
+      connected: '{{target}} 연결됨:',
+      connectFailed: '{{target}} 연결 실패:',
+      targetDevice: '기기',
+      targetWindow: '윈도우',
       // 리소스 로딩 메시지
       loadingResource: '리소스 로딩 중: {{name}}',
       resourceLoaded: '리소스 로드됨: {{name}}',

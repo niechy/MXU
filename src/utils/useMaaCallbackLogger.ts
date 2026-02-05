@@ -123,7 +123,9 @@ function inferCtrlInfoFromInstance(instanceId: string): {
   const state = useAppStore.getState();
   const instance = state.instances.find((i) => i.id === instanceId);
   const savedDevice = instance?.savedDevice;
-  const controllerName = state.selectedController[instanceId];
+  // 获取控制器名称：优先使用已选中的，否则使用第一个作为默认值（与 Toolbar.tsx 保持一致）
+  const controllerName =
+    state.selectedController[instanceId] || state.projectInterface?.controller?.[0]?.name;
 
   if (!controllerName) return { type: undefined, name: undefined };
 
