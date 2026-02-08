@@ -159,13 +159,19 @@ function OptionListRenderer({
   disabled: boolean;
 }) {
   const { projectInterface, resolveI18nText, language } = useAppStore();
+  const { t } = useTranslation();
   const langKey = getInterfaceLangKey(language);
+
+  // 获取选项定义（支持 MXU 特殊任务）
+  const getOptionDef = (optionKey: string) => {
+    const isMxuOption = optionKey.startsWith('__MXU_');
+    return isMxuOption 
+      ? findMxuOptionByKey(optionKey) 
+      : projectInterface?.option?.[optionKey];
+  };
 
   // 将选项分组：连续 5 个以上无子选项的 switch 合并为网格
   const groups = useMemo(() => {
-    if (!projectInterface?.option)
-      return optionKeys.map((k) => ({ type: 'single' as const, optionKey: k }));
-
     const result: OptionGroup[] = [];
     let currentSwitchGroup: string[] = [];
 
@@ -183,7 +189,7 @@ function OptionListRenderer({
     };
 
     for (const optionKey of optionKeys) {
-      const optionDef = projectInterface.option[optionKey];
+      const optionDef = getOptionDef(optionKey);
 
       // 判断是否为无子选项的 switch
       const isSimpleSwitch = optionDef?.type === 'switch' && !switchHasNestedOptions(optionDef);
@@ -205,15 +211,24 @@ function OptionListRenderer({
 
   // 构建 SwitchGrid 的数据
   const buildSwitchGridItems = (keys: string[]) => {
-    if (!projectInterface?.option) return [];
     return keys.map((optionKey) => {
-      const optionDef = projectInterface.option![optionKey];
+      const optionDef = getOptionDef(optionKey);
       const value = optionValues[optionKey];
       const isChecked = value?.type === 'switch' ? value.value : false;
+      const isMxuOption = optionKey.startsWith('__MXU_');
+      
+      // 对于 MXU 内置选项，使用 t() 翻译；否则使用 resolveI18nText
+      const label = isMxuOption
+        ? t(optionDef?.label || optionKey)
+        : resolveI18nText(optionDef?.label, langKey) || optionKey;
+      const description = isMxuOption
+        ? (optionDef?.description ? t(optionDef.description) : undefined)
+        : resolveI18nText(optionDef?.description, langKey);
+      
       return {
         optionKey,
-        label: resolveI18nText(optionDef?.label, langKey) || optionKey,
-        description: resolveI18nText(optionDef?.description, langKey),
+        label,
+        description,
         isChecked,
       };
     });
