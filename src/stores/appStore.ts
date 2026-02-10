@@ -1,53 +1,53 @@
-import { create } from 'zustand';
-import { subscribeWithSelector } from 'zustand/middleware';
-import type {
-  Instance,
-  SelectedTask,
-  OptionValue,
-  ActionConfig,
-  OptionDefinition,
-} from '@/types/interface';
-import { getMxuSpecialTask, isMxuSpecialTask, MXU_SPECIAL_TASKS } from '@/types/specialTasks';
-import type { MxuConfig, RecentlyClosedInstance } from '@/types/config';
-import {
-  defaultWindowSize,
-  defaultMirrorChyanSettings,
-  defaultScreenshotFrameRate,
-} from '@/types/config';
-import { findSwitchCase } from '@/utils/optionHelpers';
-import type { ConnectionStatus, TaskStatus } from '@/types/maa';
-import { saveConfig } from '@/services/configService';
 import i18n, { getInterfaceLangKey, setLanguage as setI18nLanguage } from '@/i18n';
+import { saveConfig } from '@/services/configService';
+import { maaService } from '@/services/maaService';
 import {
-  applyTheme,
-  resolveThemeMode,
   type AccentColor,
+  applyTheme,
+  clearCustomAccents,
   type CustomAccent,
   registerCustomAccent,
+  resolveThemeMode,
   unregisterCustomAccent,
-  clearCustomAccents,
 } from '@/themes';
+import type { MxuConfig, RecentlyClosedInstance } from '@/types/config';
+import {
+  defaultMirrorChyanSettings,
+  defaultScreenshotFrameRate,
+  defaultWindowSize,
+} from '@/types/config';
+import type {
+  ActionConfig,
+  Instance,
+  OptionDefinition,
+  OptionValue,
+  SelectedTask,
+} from '@/types/interface';
+import type { ConnectionStatus, TaskStatus } from '@/types/maa';
+import { getMxuSpecialTask, isMxuSpecialTask, MXU_SPECIAL_TASKS } from '@/types/specialTasks';
 import { loggers } from '@/utils/logger';
-import { maaService } from '@/services/maaService';
+import { findSwitchCase } from '@/utils/optionHelpers';
+import { create } from 'zustand';
+import { subscribeWithSelector } from 'zustand/middleware';
 
-// 从独立模块导入类型和辅助函数
-import type { AppState, TaskRunStatus, LogEntry } from './types';
 import { generateId, initializeAllOptionValues } from './helpers';
+// 从独立模块导入类型和辅助函数
+import type { AppState, LogEntry, TaskRunStatus } from './types';
 
 // 重新导出类型供外部使用
 export type {
-  TaskRunStatus,
-  LogType,
-  LogEntry,
-  Theme,
-  Language,
-  PageView,
-  ScheduleExecutionInfo,
-  UpdateInfo,
   DownloadProgress,
   DownloadStatus,
   InstallStatus,
   JustUpdatedInfo,
+  Language,
+  LogEntry,
+  LogType,
+  PageView,
+  ScheduleExecutionInfo,
+  TaskRunStatus,
+  Theme,
+  UpdateInfo,
 } from './types';
 
 // 最近关闭列表最大条目数
@@ -79,7 +79,9 @@ export const useAppStore = create<AppState>()(
     },
     setConfirmBeforeDelete: (enabled) => set({ confirmBeforeDelete: enabled }),
     setMaxLogsPerInstance: (value) =>
-      set({ maxLogsPerInstance: Math.max(100, Math.min(10000, Math.floor(value))) }),
+      set({
+        maxLogsPerInstance: Math.max(100, Math.min(10000, Math.floor(value))),
+      }),
     addCustomAccent: (accent) => {
       set((state) => ({
         customAccents: [...state.customAccents, accent],
@@ -292,10 +294,19 @@ export const useAppStore = create<AppState>()(
           newRecentlyClosed = [closedRecord, ...state.recentlyClosed].slice(0, MAX_RECENTLY_CLOSED);
         }
 
+        // 如果删除的实例是"启动后自动执行"的目标实例，重置自动执行设置并记录被删名称
+        const autoStartUpdate: Partial<AppState> = {};
+        if (state.autoStartInstanceId === id) {
+          autoStartUpdate.autoStartInstanceId = undefined;
+          autoStartUpdate.autoRunOnLaunch = false;
+          autoStartUpdate.autoStartRemovedInstanceName = instanceToClose?.name;
+        }
+
         return {
           instances: newInstances,
           activeInstanceId: newActiveId,
           recentlyClosed: newRecentlyClosed,
+          ...autoStartUpdate,
         };
       }),
 
@@ -424,7 +435,10 @@ export const useAppStore = create<AppState>()(
       set((state) => ({
         instances: state.instances.map((i) =>
           i.id === instanceId
-            ? { ...i, selectedTasks: i.selectedTasks.filter((t) => t.id !== taskId) }
+            ? {
+                ...i,
+                selectedTasks: i.selectedTasks.filter((t) => t.id !== taskId),
+              }
             : i,
         ),
       })),
@@ -829,11 +843,13 @@ export const useAppStore = create<AppState>()(
           );
         }
 
-        // 恢复已保存的任务，过滤掉无效任务（taskName 在 interface 或 MXU 特殊任务中不存在的），并清理已删除的 option
+        // 恢复已保存的任务，过滤掉无效任务（taskName 在 interface 或 MXU
+        // 特殊任务中不存在的），并清理已删除的 option
         const savedTasks: SelectedTask[] = inst.tasks
           .filter((t) => validTaskNames.has(t.taskName))
           .map((t) => {
-            // MXU 特殊任务使用独立的选项系统，直接保留其 optionValues
+            // MXU 特殊任务使用独立的选项系统，直接保留其
+            // optionValues
             if (isMxuSpecialTask(t.taskName)) {
               return {
                 id: t.id,
@@ -853,7 +869,10 @@ export const useAppStore = create<AppState>()(
                 ? initializeAllOptionValues(taskDef.option, pi.option)
                 : {};
             // 用户保存的值优先，缺失的使用默认值
-            const mergedValues = { ...defaultValues, ...cleanedValues };
+            const mergedValues = {
+              ...defaultValues,
+              ...cleanedValues,
+            };
             return {
               id: t.id,
               taskName: t.taskName,
@@ -911,7 +930,8 @@ export const useAppStore = create<AppState>()(
         registerCustomAccent(accent);
       });
 
-      // 恢复最后激活的实例 ID，如果保存的实例仍存在则使用它，否则回退到第一个实例
+      // 恢复最后激活的实例
+      // ID，如果保存的实例仍存在则使用它，否则回退到第一个实例
       const savedActiveId = config.lastActiveInstanceId;
       const activeInstanceId =
         savedActiveId && instances.some((i) => i.id === savedActiveId)
@@ -946,6 +966,9 @@ export const useAppStore = create<AppState>()(
         welcomeShownHash: config.settings.welcomeShownHash ?? '',
         devMode: config.settings.devMode ?? false,
         tcpCompatMode: config.settings.tcpCompatMode ?? false,
+        autoStartInstanceId: config.settings.autoStartInstanceId,
+        autoRunOnLaunch: config.settings.autoRunOnLaunch ?? false,
+        autoStartRemovedInstanceName: config.settings.autoStartRemovedInstanceName,
         minimizeToTray: config.settings.minimizeToTray ?? false,
         onboardingCompleted: config.settings.onboardingCompleted ?? false,
         hotkeys: config.settings.hotkeys ?? {
@@ -1120,8 +1143,8 @@ export const useAppStore = create<AppState>()(
           const backendState = states.instances[instance.id];
           if (backendState) {
             // 只有当后端有正在运行的任务时，才恢复 isRunning 状态
-            // taskIds 为空表示用户已停止任务（MaaTaskerPostStop 清空了 task_ids，
-            // 但 MaaTaskerRunning 可能在回调完成前仍返回 true）
+            // taskIds 为空表示用户已停止任务（MaaTaskerPostStop 清空了
+            // task_ids， 但 MaaTaskerRunning 可能在回调完成前仍返回 true）
             const isRunning = backendState.isRunning && backendState.taskIds.length > 0;
             return {
               ...instance,
@@ -1225,6 +1248,23 @@ export const useAppStore = create<AppState>()(
     // 通信兼容模式
     tcpCompatMode: false,
     setTcpCompatMode: (enabled) => set({ tcpCompatMode: enabled }),
+
+    // 启动后自动执行的实例 ID
+    autoStartInstanceId: undefined,
+    setAutoStartInstanceId: (id) =>
+      set({
+        autoStartInstanceId: id,
+        // 用户重新选择配置时，清除"被删除"的提示标记
+        autoStartRemovedInstanceName: undefined,
+      }),
+
+    // 被删除的自动执行实例名称（用于提示用户）
+    autoStartRemovedInstanceName: undefined,
+    setAutoStartRemovedInstanceName: (name) => set({ autoStartRemovedInstanceName: name }),
+
+    // 手动启动时是否也自动执行
+    autoRunOnLaunch: false,
+    setAutoRunOnLaunch: (enabled) => set({ autoRunOnLaunch: enabled }),
 
     // 托盘设置
     minimizeToTray: false,
@@ -1510,7 +1550,8 @@ export const useAppStore = create<AppState>()(
           ...log,
         };
         // 限制每个实例最多保留 N 条日志（超出丢弃最旧的）。
-        // 这里也做归一化，避免配置错误导致无限增长；与 UI 限制保持一致：[100, 10000]，默认 2000。
+        // 这里也做归一化，避免配置错误导致无限增长；与 UI
+        // 限制保持一致：[100, 10000]，默认 2000。
         const DEFAULT_MAX_LOGS_PER_INSTANCE = 2000;
         const rawLimit = Number.isFinite(state.maxLogsPerInstance)
           ? state.maxLogsPerInstance
@@ -1612,6 +1653,9 @@ function generateConfig(): MxuConfig {
       welcomeShownHash: state.welcomeShownHash,
       devMode: state.devMode,
       tcpCompatMode: state.tcpCompatMode,
+      autoStartInstanceId: state.autoStartInstanceId,
+      autoRunOnLaunch: state.autoRunOnLaunch,
+      autoStartRemovedInstanceName: state.autoStartRemovedInstanceName,
       minimizeToTray: state.minimizeToTray,
       onboardingCompleted: state.onboardingCompleted,
       hotkeys: state.hotkeys,
@@ -1667,6 +1711,9 @@ useAppStore.subscribe(
     welcomeShownHash: state.welcomeShownHash,
     devMode: state.devMode,
     tcpCompatMode: state.tcpCompatMode,
+    autoStartInstanceId: state.autoStartInstanceId,
+    autoRunOnLaunch: state.autoRunOnLaunch,
+    autoStartRemovedInstanceName: state.autoStartRemovedInstanceName,
     minimizeToTray: state.minimizeToTray,
     onboardingCompleted: state.onboardingCompleted,
     hotkeys: state.hotkeys,

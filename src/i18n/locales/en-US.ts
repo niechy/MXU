@@ -86,6 +86,17 @@ export default {
     hotkeysGlobalOnlyStart: 'only start works in global mode',
     minimizeToTray: 'Minimize to tray on close',
     minimizeToTrayHint: 'Hide to system tray instead of exiting when clicking close button',
+    autoStart: 'Launch at startup',
+    autoStartHint: 'Automatically start this application when the system boots',
+    autoStartInstance: 'Auto-execute on startup',
+    autoStartInstanceHint:
+      'Select a configuration to activate and run tasks automatically after startup. Scheduled tasks for other configurations will still run normally',
+    autoStartInstanceNone: 'Do not auto-execute',
+    autoStartInstanceRemoved:
+      'Previously selected configuration "{{name}}" has been deleted. Auto-execute has been disabled',
+    autoRunOnLaunch: 'Also auto-execute on manual launch',
+    autoRunOnLaunchHint:
+      'Auto-execute the selected configuration every time you manually open the app (by default, only triggered on system startup)',
     confirmBeforeDelete: 'Confirm delete actions',
     confirmBeforeDeleteHint: 'Show confirmation before delete/clear list/import overwrite, etc.',
     maxLogsPerInstance: 'Max logs per instance',
