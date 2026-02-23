@@ -321,14 +321,20 @@ fn to_wide(s: &str) -> Vec<u16> {
 
 #[cfg(windows)]
 fn create_schtask_autostart() -> Result<(), String> {
-    let exe_path = std::env::current_exe()
-        .map_err(|e| format!("获取程序路径失败: {}", e))?;
+    let exe_path = std::env::current_exe().map_err(|e| format!("获取程序路径失败: {}", e))?;
     let exe = exe_path.to_string_lossy();
     let output = std::process::Command::new("schtasks")
         .args([
-            "/create", "/tn", "MXU", "/tr",
+            "/create",
+            "/tn",
+            "MXU",
+            "/tr",
             &format!("\"{}\" --autostart", exe),
-            "/sc", "onlogon", "/rl", "highest", "/f",
+            "/sc",
+            "onlogon",
+            "/rl",
+            "highest",
+            "/f",
         ])
         .output()
         .map_err(|e| format!("执行 schtasks 失败: {}", e))?;
@@ -342,13 +348,21 @@ fn create_schtask_autostart() -> Result<(), String> {
 /// 清理旧版注册表自启动条目（tauri-plugin-autostart 遗留）
 #[cfg(windows)]
 fn remove_legacy_registry_autostart() {
-    use windows::Win32::System::Registry::*;
     use windows::core::PCWSTR;
+    use windows::Win32::System::Registry::*;
 
     unsafe {
         let subkey = to_wide(r"Software\Microsoft\Windows\CurrentVersion\Run");
         let mut hkey = HKEY::default();
-        if RegOpenKeyExW(HKEY_CURRENT_USER, PCWSTR(subkey.as_ptr()), 0, KEY_SET_VALUE | KEY_QUERY_VALUE, &mut hkey).is_ok() {
+        if RegOpenKeyExW(
+            HKEY_CURRENT_USER,
+            PCWSTR(subkey.as_ptr()),
+            0,
+            KEY_SET_VALUE | KEY_QUERY_VALUE,
+            &mut hkey,
+        )
+        .is_ok()
+        {
             for name in &["mxu", "MXU"] {
                 let wname = to_wide(name);
                 let _ = RegDeleteValueW(hkey, PCWSTR(wname.as_ptr()));
@@ -361,13 +375,21 @@ fn remove_legacy_registry_autostart() {
 /// 检查旧版注册表中是否存在自启动条目
 #[cfg(windows)]
 fn has_legacy_registry_autostart() -> bool {
-    use windows::Win32::System::Registry::*;
     use windows::core::PCWSTR;
+    use windows::Win32::System::Registry::*;
 
     unsafe {
         let subkey = to_wide(r"Software\Microsoft\Windows\CurrentVersion\Run");
         let mut hkey = HKEY::default();
-        if RegOpenKeyExW(HKEY_CURRENT_USER, PCWSTR(subkey.as_ptr()), 0, KEY_QUERY_VALUE, &mut hkey).is_err() {
+        if RegOpenKeyExW(
+            HKEY_CURRENT_USER,
+            PCWSTR(subkey.as_ptr()),
+            0,
+            KEY_QUERY_VALUE,
+            &mut hkey,
+        )
+        .is_err()
+        {
             return false;
         }
         let found = ["mxu", "MXU"].iter().any(|name| {
