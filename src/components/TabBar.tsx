@@ -70,6 +70,7 @@ export function TabBar() {
     closingTabIds,
     removeAnimatingTabId,
     startTabCloseAnimation,
+    confirmBeforeDelete,
   } = useAppStore();
 
   // 使用全局状态控制更新面板显示
@@ -92,9 +93,13 @@ export function TabBar() {
   const handleCloseTab = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (instances.length > 1) {
-      const instance = instances.find((inst) => inst.id === id);
-      if (instance) {
-        setCloseConfirm({ id, name: instance.name });
+      if (confirmBeforeDelete) {
+        const instance = instances.find((inst) => inst.id === id);
+        if (instance) {
+          setCloseConfirm({ id, name: instance.name });
+        }
+      } else {
+        startTabCloseAnimation(id);
       }
     }
   };
@@ -209,8 +214,12 @@ export function TabBar() {
           icon: X,
           disabled: instances.length <= 1,
           onClick: () => {
-            const inst = instances.find((i) => i.id === instanceId);
-            if (inst) setCloseConfirm({ id: instanceId, name: inst.name });
+            if (confirmBeforeDelete) {
+              const inst = instances.find((i) => i.id === instanceId);
+              if (inst) setCloseConfirm({ id: instanceId, name: inst.name });
+            } else {
+              startTabCloseAnimation(instanceId);
+            }
           },
         },
         {
