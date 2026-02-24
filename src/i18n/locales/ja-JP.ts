@@ -28,6 +28,8 @@ export default {
     renameInstance: 'インスタンス名を変更',
     instanceName: 'インスタンス名',
     dragToReorder: 'ドラッグして並べ替え',
+    closeTabConfirmTitle: '設定を閉じる',
+    closeTabConfirmMessage: '「{{name}}」を閉じてもよろしいですか？',
   },
 
   // ウィンドウコントロール

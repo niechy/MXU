@@ -28,6 +28,8 @@ export default {
     renameInstance: '重新命名執行個體',
     instanceName: '執行個體名稱',
     dragToReorder: '拖動以重新排序',
+    closeTabConfirmTitle: '關閉配置',
+    closeTabConfirmMessage: '確定要關閉「{{name}}」嗎？',
   },
 
   // 視窗控制按钮

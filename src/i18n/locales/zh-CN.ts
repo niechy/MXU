@@ -29,6 +29,8 @@ export default {
     renameInstance: '重命名实例',
     instanceName: '实例名称',
     dragToReorder: '拖拽以重新排序',
+    closeTabConfirmTitle: '关闭配置',
+    closeTabConfirmMessage: '确定要关闭「{{name}}」吗？',
   },
 
   // 窗口控制按钮

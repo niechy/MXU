@@ -25,6 +25,7 @@ import { useAppStore } from '@/stores/appStore';
 import { ContextMenu, useContextMenu, type MenuItem } from './ContextMenu';
 import { UpdatePanel } from './UpdatePanel';
 import { RecentlyClosedPanel } from './RecentlyClosedPanel';
+import { ConfirmDialog } from './ConfirmDialog';
 import { getInterfaceLangKey } from '@/i18n';
 import clsx from 'clsx';
 
@@ -32,6 +33,7 @@ export function TabBar() {
   const { t } = useTranslation();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editName, setEditName] = useState('');
+  const [closeConfirm, setCloseConfirm] = useState<{ id: string; name: string } | null>(null);
   const [dragState, setDragState] = useState<{
     isDragging: boolean;
     draggedIndex: number;
@@ -90,8 +92,22 @@ export function TabBar() {
   const handleCloseTab = (e: React.MouseEvent, id: string) => {
     e.stopPropagation();
     if (instances.length > 1) {
-      startTabCloseAnimation(id);
+      const instance = instances.find((inst) => inst.id === id);
+      if (instance) {
+        setCloseConfirm({ id, name: instance.name });
+      }
     }
+  };
+
+  const handleConfirmClose = () => {
+    if (closeConfirm) {
+      startTabCloseAnimation(closeConfirm.id);
+      setCloseConfirm(null);
+    }
+  };
+
+  const handleCancelClose = () => {
+    setCloseConfirm(null);
   };
 
   const handleDoubleClick = (e: React.MouseEvent, id: string, name: string) => {
@@ -192,7 +208,10 @@ export function TabBar() {
           label: t('contextMenu.closeTab'),
           icon: X,
           disabled: instances.length <= 1,
-          onClick: () => startTabCloseAnimation(instanceId),
+          onClick: () => {
+            const inst = instances.find((i) => i.id === instanceId);
+            if (inst) setCloseConfirm({ id: instanceId, name: inst.name });
+          },
         },
         {
           id: 'close-others',
@@ -519,6 +538,18 @@ export function TabBar() {
           anchorRef={recentlyClosedButtonRef}
         />
       )}
+
+      {/* 关闭标签确认弹窗 */}
+      <ConfirmDialog
+        open={closeConfirm !== null}
+        title={t('titleBar.closeTabConfirmTitle')}
+        message={t('titleBar.closeTabConfirmMessage', { name: closeConfirm?.name ?? '' })}
+        confirmText={t('common.confirm')}
+        cancelText={t('common.cancel')}
+        destructive
+        onConfirm={handleConfirmClose}
+        onCancel={handleCancelClose}
+      />
     </div>
   );
 }

@@ -28,6 +28,8 @@ export default {
     renameInstance: '인스턴스 이름 변경',
     instanceName: '인스턴스 이름',
     dragToReorder: '드래그하여 순서 변경',
+    closeTabConfirmTitle: '탭 닫기',
+    closeTabConfirmMessage: '"{{name}}"을(를) 닫으시겠습니까?',
   },
 
   // 창 컨트롤

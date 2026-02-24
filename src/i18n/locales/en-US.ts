@@ -29,6 +29,8 @@ export default {
     renameInstance: 'Rename Instance',
     instanceName: 'Instance Name',
     dragToReorder: 'Drag to reorder',
+    closeTabConfirmTitle: 'Close Tab',
+    closeTabConfirmMessage: 'Are you sure you want to close "{{name}}"?',
   },
 
   // Window controls
