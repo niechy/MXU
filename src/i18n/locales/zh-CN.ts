@@ -285,6 +285,12 @@ export default {
     preActionSkipped: '前置程序 {{name}} 已在运行，跳过执行',
     waitingForDevice: '正在等待设备就绪...',
     waitingForWindow: '正在等待窗口就绪...',
+    waitingForDeviceNamed: '正在等待设备「{{name}}」就绪...',
+    waitingForWindowNamed: '正在等待窗口「{{name}}」就绪...',
+    waitingForAnyDevice:
+      '正在等待任意匹配设备就绪。若等待的不是目标设备，请先在连接设置中手动选择后再启动。',
+    waitingForAnyWindow:
+      '正在等待任意匹配窗口就绪。若等待的不是目标窗口，请先在连接设置中手动选择后再启动。',
     deviceReady: '设备已就绪',
     windowReady: '窗口已就绪',
     deviceWaitTimeout: '等待设备超时',

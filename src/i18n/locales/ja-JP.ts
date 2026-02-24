@@ -290,6 +290,12 @@ export default {
     preActionSkipped: '前処理プログラム {{name}} は実行中のためスキップしました',
     waitingForDevice: 'デバイスの準備を待機中...',
     waitingForWindow: 'ウィンドウの準備を待機中...',
+    waitingForDeviceNamed: 'デバイス「{{name}}」の準備を待機中...',
+    waitingForWindowNamed: 'ウィンドウ「{{name}}」の準備を待機中...',
+    waitingForAnyDevice:
+      '任意の一致デバイスが現れるのを待機中。対象が目的のデバイスでない場合は、接続設定で手動選択してから起動してください。',
+    waitingForAnyWindow:
+      '任意の一致ウィンドウが現れるのを待機中。対象が目的のウィンドウでない場合は、接続設定で手動選択してから起動してください。',
     deviceReady: 'デバイスが準備完了',
     windowReady: 'ウィンドウが準備完了',
     deviceWaitTimeout: 'デバイス待機タイムアウト',

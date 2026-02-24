@@ -284,6 +284,12 @@ export default {
     preActionSkipped: '前置程式 {{name}} 已在運行，跳過執行',
     waitingForDevice: '正在等待裝置就緒...',
     waitingForWindow: '正在等待視窗就緒...',
+    waitingForDeviceNamed: '正在等待裝置「{{name}}」就緒...',
+    waitingForWindowNamed: '正在等待視窗「{{name}}」就緒...',
+    waitingForAnyDevice:
+      '正在等待任意匹配裝置就緒。若等待的不是目標裝置，請先在連接設定中手動選擇後再啟動。',
+    waitingForAnyWindow:
+      '正在等待任意匹配視窗就緒。若等待的不是目標視窗，請先在連接設定中手動選擇後再啟動。',
     deviceReady: '裝置已就緒',
     windowReady: '視窗已就緒',
     deviceWaitTimeout: '等待裝置逾時',

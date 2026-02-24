@@ -381,10 +381,22 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
               const controllerType = controller.type;
               const isWindowType = controllerType === 'Win32' || controllerType === 'Gamepad';
               log.info(`实例 ${targetInstance.name}: 等待${isWindowType ? '窗口' : '设备'}就绪...`);
-              addLog(targetId, {
-                type: 'info',
-                message: isWindowType ? t('action.waitingForWindow') : t('action.waitingForDevice'),
-              });
+              // 根据是否有保存的设备名，输出不同的等待提示
+              if (isWindowType) {
+                addLog(targetId, {
+                  type: 'info',
+                  message: savedDevice?.windowName
+                    ? t('action.waitingForWindowNamed', { name: savedDevice.windowName })
+                    : t('action.waitingForAnyWindow'),
+                });
+              } else {
+                addLog(targetId, {
+                  type: 'info',
+                  message: savedDevice?.adbDeviceName
+                    ? t('action.waitingForDeviceNamed', { name: savedDevice.adbDeviceName })
+                    : t('action.waitingForAnyDevice'),
+                });
+              }
               let deviceFound = false;
               let attempts = 0;
               const maxAttempts = 300; // 最多等待 5 分钟

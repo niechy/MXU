@@ -291,6 +291,12 @@ export default {
     preActionSkipped: 'Pre-program {{name}} is already running, skipped',
     waitingForDevice: 'Waiting for device to be ready...',
     waitingForWindow: 'Waiting for window to be ready...',
+    waitingForDeviceNamed: 'Waiting for device "{{name}}" to be ready...',
+    waitingForWindowNamed: 'Waiting for window "{{name}}" to be ready...',
+    waitingForAnyDevice:
+      'Waiting for any matching device to appear. If this is not the target device, please select manually in Connection Settings before starting.',
+    waitingForAnyWindow:
+      'Waiting for any matching window to appear. If this is not the target window, please select manually in Connection Settings before starting.',
     deviceReady: 'Device is ready',
     windowReady: 'Window is ready',
     deviceWaitTimeout: 'Device wait timeout',

@@ -289,6 +289,12 @@ export default {
     preActionSkipped: '전처리 프로그램 {{name}} 이(가) 실행 중이므로 건너뜁니다',
     waitingForDevice: '장치 준비 대기 중...',
     waitingForWindow: '윈도우 준비 대기 중...',
+    waitingForDeviceNamed: '장치 「{{name}}」 준비 대기 중...',
+    waitingForWindowNamed: '윈도우 「{{name}}」 준비 대기 중...',
+    waitingForAnyDevice:
+      '일치하는 장치가 나타날 때까지 대기 중. 원하는 장치가 아닌 경우, 먼저 연결 설정에서 수동으로 선택한 후 시작하세요.',
+    waitingForAnyWindow:
+      '일치하는 윈도우가 나타날 때까지 대기 중. 원하는 윈도우가 아닌 경우, 먼저 연결 설정에서 수동으로 선택한 후 시작하세요.',
     deviceReady: '장치 준비 완료',
     windowReady: '윈도우 준비 완료',
     deviceWaitTimeout: '장치 대기 시간 초과',
