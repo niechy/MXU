@@ -14,8 +14,7 @@ use maa_framework::resource::Resource;
 /// MXU_SLEEP 动作名称常量
 const MXU_SLEEP_ACTION: &str = "MXU_SLEEP_ACTION";
 
-/// MXU_SLEEP custom action 回调函数
-/// 从 custom_action_param 中读取 sleep_time（秒），执行等待操作
+/// 检查 Tasker 是否正在停止中
 fn is_tasker_stopping(ctx: &maa_framework::context::Context) -> bool {
     let tasker_ptr = ctx.tasker_handle();
     if tasker_ptr.is_null() {
@@ -29,6 +28,8 @@ fn is_tasker_stopping(ctx: &maa_framework::context::Context) -> bool {
         .unwrap_or(false)
 }
 
+/// 等待指定秒数，每隔 200ms 检查一次 Tasker 停止信号。
+/// 返回 true 表示等待完成，false 表示被中断。
 fn wait_with_stop_check(ctx: &maa_framework::context::Context, total_secs: u64) -> bool {
     const STEP: std::time::Duration = std::time::Duration::from_millis(200);
     let total = std::time::Duration::from_secs(total_secs);
@@ -46,6 +47,8 @@ fn wait_with_stop_check(ctx: &maa_framework::context::Context, total_secs: u64) 
     true
 }
 
+/// MXU_SLEEP custom action 回调函数
+/// 从 custom_action_param 中读取 sleep_time（秒），执行可中断等待操作
 fn mxu_sleep_action_fn(
     ctx: &maa_framework::context::Context,
     args: &maa_framework::custom::ActionArgs,
