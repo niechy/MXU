@@ -451,11 +451,7 @@ function App() {
           const langKey = getInterfaceLangKey(storeState.language);
           let firstInstanceId: string | null = null;
           for (const preset of presets) {
-            const label =
-              (typeof preset.label === 'string'
-                ? preset.label
-                : preset.label?.[langKey] ?? preset.label?.['zh-CN'] ?? preset.label?.['en-US']) ||
-              preset.name;
+            const label = storeState.resolveI18nText(preset.label, langKey) || preset.name;
             const instanceId = storeState.createInstance(label, true);
             storeState.applyPreset(instanceId, preset.name);
             if (!firstInstanceId) firstInstanceId = instanceId;
