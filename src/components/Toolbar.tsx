@@ -60,11 +60,8 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
     findSelectedTaskIdByMaaTaskId,
     clearTaskRunStatus,
     // 任务队列管理
-    instancePendingTaskIds,
-    instanceCurrentTaskIndex,
     setPendingTaskIds,
     setCurrentTaskIndex: setCurrentTaskIndexStore,
-    advanceCurrentTaskIndex,
     clearPendingTasks,
     // 定时执行状态
     scheduleExecutions,
@@ -110,9 +107,6 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
 
   const instanceId = instance?.id || '';
 
-  // 任务队列状态（从 store 获取）
-  const pendingTaskIds = instancePendingTaskIds[instanceId] || [];
-  const currentTaskIndex = instanceCurrentTaskIndex[instanceId] || 0;
   const runningInstanceIdRef = useRef<string | null>(null);
 
   // 检查是否有保存的设备和资源配置（用于权限检查等）
@@ -125,107 +119,75 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
   // 只要有启用的任务就可以运行（连接和资源加载会在 startTasksForInstance 中自动处理）
   const canRun = tasks.some((t) => t.enabled);
 
-  // 监听任务完成回调
+  // 全局监听任务回调（避免短任务在队列状态尚未刷新时丢事件）
   useEffect(() => {
-    if (pendingTaskIds.length === 0) return;
-
-    const currentTaskId = pendingTaskIds[currentTaskIndex];
-    if (currentTaskId === undefined) return;
-
     let unlisten: (() => void) | null = null;
 
     maaService
       .onCallback((message, details) => {
-        if (details.task_id !== currentTaskId) return;
+        if (message !== 'Tasker.Task.Succeeded' && message !== 'Tasker.Task.Failed') return;
+
+        const taskId = details.task_id;
+        if (typeof taskId !== 'number') return;
 
         const runningInstanceId = runningInstanceIdRef.current;
         if (!runningInstanceId) return;
 
-        if (message === 'Tasker.Task.Succeeded') {
-          log.info(`任务 ${currentTaskIndex + 1}/${pendingTaskIds.length} 完成`);
+        const state = useAppStore.getState();
+        const queue = state.instancePendingTaskIds[runningInstanceId] || [];
+        if (queue.length === 0) return;
 
-          // 更新当前任务状态为成功
-          const selectedTaskId = findSelectedTaskIdByMaaTaskId(runningInstanceId, currentTaskId);
-          if (selectedTaskId) {
-            setTaskRunStatus(runningInstanceId, selectedTaskId, 'succeeded');
-          }
+        const queueIndex = queue.indexOf(taskId);
+        if (queueIndex < 0) return;
 
-          // 检查是否还有更多任务
-          if (currentTaskIndex + 1 < pendingTaskIds.length) {
-            // 移动到下一个任务
-            advanceCurrentTaskIndex(runningInstanceId);
-            const nextIndex = currentTaskIndex + 1;
-            setInstanceCurrentTaskId(runningInstanceId, pendingTaskIds[nextIndex]);
+        const activeIndex = state.instanceCurrentTaskIndex[runningInstanceId] || 0;
+        // 仅消费当前任务或向前推进，防止重复/乱序回调污染状态机
+        if (queueIndex < activeIndex) return;
 
-            // 将下一个任务设为 running
-            const nextSelectedTaskId = findSelectedTaskIdByMaaTaskId(
-              runningInstanceId,
-              pendingTaskIds[nextIndex],
-            );
-            if (nextSelectedTaskId) {
-              setTaskRunStatus(runningInstanceId, nextSelectedTaskId, 'running');
-            }
-          } else {
-            // 所有任务完成
-            log.info('所有任务执行完成');
-
-            // 停止 Agent（如果有）
-            const agentConfigs = normalizeAgentConfigs(projectInterface?.agent);
-            if (agentConfigs && agentConfigs.length > 0) {
-              maaService.stopAgent(runningInstanceId).catch((err) => {
-                log.error('停止 Agent 失败:', err);
-              });
-            }
-
-            setInstanceTaskStatus(runningInstanceId, 'Succeeded');
-            updateInstance(runningInstanceId, { isRunning: false });
-            setInstanceCurrentTaskId(runningInstanceId, null);
-            clearPendingTasks(runningInstanceId);
-            runningInstanceIdRef.current = null;
-          }
-        } else if (message === 'Tasker.Task.Failed') {
-          log.error('任务执行失败, task_id:', currentTaskId);
-
-          // 更新当前任务状态为失败
-          const selectedTaskId = findSelectedTaskIdByMaaTaskId(runningInstanceId, currentTaskId);
-          if (selectedTaskId) {
-            setTaskRunStatus(runningInstanceId, selectedTaskId, 'failed');
-          }
-
-          // 检查是否还有更多任务（失败的任务不阻止后续任务执行）
-          if (currentTaskIndex + 1 < pendingTaskIds.length) {
-            // 移动到下一个任务
-            advanceCurrentTaskIndex(runningInstanceId);
-            const nextIndex = currentTaskIndex + 1;
-            setInstanceCurrentTaskId(runningInstanceId, pendingTaskIds[nextIndex]);
-
-            // 将下一个任务设为 running
-            const nextSelectedTaskId = findSelectedTaskIdByMaaTaskId(
-              runningInstanceId,
-              pendingTaskIds[nextIndex],
-            );
-            if (nextSelectedTaskId) {
-              setTaskRunStatus(runningInstanceId, nextSelectedTaskId, 'running');
-            }
-          } else {
-            // 所有任务执行完毕（至少有一个失败）
-            log.info('所有任务执行完毕（有任务失败）');
-
-            // 停止 Agent（如果有）
-            const agentConfigs = normalizeAgentConfigs(projectInterface?.agent);
-            if (agentConfigs && agentConfigs.length > 0) {
-              maaService.stopAgent(runningInstanceId).catch((err) => {
-                log.error('停止 Agent 失败:', err);
-              });
-            }
-
-            setInstanceTaskStatus(runningInstanceId, 'Failed');
-            updateInstance(runningInstanceId, { isRunning: false });
-            setInstanceCurrentTaskId(runningInstanceId, null);
-            clearPendingTasks(runningInstanceId);
-            runningInstanceIdRef.current = null;
-          }
+        if (queueIndex > activeIndex) {
+          setCurrentTaskIndexStore(runningInstanceId, queueIndex);
+          setInstanceCurrentTaskId(runningInstanceId, taskId);
         }
+
+        if (message === 'Tasker.Task.Succeeded') {
+          log.info(`任务 ${queueIndex + 1}/${queue.length} 完成`);
+        } else {
+          log.error('任务执行失败, task_id:', taskId);
+        }
+
+        const selectedTaskId = findSelectedTaskIdByMaaTaskId(runningInstanceId, taskId);
+        if (selectedTaskId) {
+          setTaskRunStatus(runningInstanceId, selectedTaskId, message === 'Tasker.Task.Succeeded' ? 'succeeded' : 'failed');
+        }
+
+        const hasMore = queueIndex + 1 < queue.length;
+        if (hasMore) {
+          const nextIndex = queueIndex + 1;
+          const nextTaskId = queue[nextIndex];
+          setCurrentTaskIndexStore(runningInstanceId, nextIndex);
+          setInstanceCurrentTaskId(runningInstanceId, nextTaskId);
+          const nextSelectedTaskId = findSelectedTaskIdByMaaTaskId(runningInstanceId, nextTaskId);
+          if (nextSelectedTaskId) {
+            setTaskRunStatus(runningInstanceId, nextSelectedTaskId, 'running');
+          }
+          return;
+        }
+
+        const finalStatus = message === 'Tasker.Task.Succeeded' ? 'Succeeded' : 'Failed';
+        log.info(finalStatus === 'Succeeded' ? '所有任务执行完成' : '所有任务执行完毕（有任务失败）');
+
+        const agentConfigs = normalizeAgentConfigs(projectInterface?.agent);
+        if (agentConfigs && agentConfigs.length > 0) {
+          maaService.stopAgent(runningInstanceId).catch((err) => {
+            log.error('停止 Agent 失败:', err);
+          });
+        }
+
+        setInstanceTaskStatus(runningInstanceId, finalStatus);
+        updateInstance(runningInstanceId, { isRunning: false });
+        setInstanceCurrentTaskId(runningInstanceId, null);
+        clearPendingTasks(runningInstanceId);
+        runningInstanceIdRef.current = null;
       })
       .then((fn) => {
         unlisten = fn;
@@ -235,16 +197,14 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
       if (unlisten) unlisten();
     };
   }, [
-    pendingTaskIds,
-    currentTaskIndex,
     projectInterface?.agent,
     setInstanceCurrentTaskId,
     setInstanceTaskStatus,
     updateInstance,
     findSelectedTaskIdByMaaTaskId,
     setTaskRunStatus,
-    advanceCurrentTaskIndex,
     clearPendingTasks,
+    setCurrentTaskIndexStore,
   ]);
 
   const handleSelectAll = () => {
@@ -535,11 +495,38 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
             onPhaseChange?.('searching');
 
             if (controllerType === 'Adb' && savedDevice.adbDeviceName) {
-              const devices = await maaService.findAdbDevices();
-              const matchedDevice = devices.find((d) => d.name === savedDevice.adbDeviceName);
+              let devices = await maaService.findAdbDevices();
+              let matchedDevice = devices.find((d) => d.name === savedDevice.adbDeviceName);
               if (!matchedDevice) {
-                log.warn(`实例 ${targetInstance.name}: 未找到设备 ${savedDevice.adbDeviceName}`);
-                return false;
+                for (let retry = 0; retry < 10; retry++) {
+                  await new Promise((resolve) => setTimeout(resolve, 1000));
+                  devices = await maaService.findAdbDevices();
+                  matchedDevice = devices.find((d) => d.name === savedDevice.adbDeviceName);
+                  if (matchedDevice) break;
+                }
+              }
+              if (!matchedDevice) {
+                const fallbackDevice = devices[0];
+                if (!fallbackDevice) {
+                  log.warn(`实例 ${targetInstance.name}: 未找到设备 ${savedDevice.adbDeviceName}`);
+                  return false;
+                }
+                log.warn(
+                  `实例 ${targetInstance.name}: 未找到已保存设备 ${savedDevice.adbDeviceName}，退化为自动匹配 ${fallbackDevice.name || fallbackDevice.address}`,
+                );
+                addLog(targetId, {
+                  type: 'warning',
+                  message: t('taskList.autoConnect.deviceNotFound', {
+                    name: savedDevice.adbDeviceName,
+                  }),
+                });
+                addLog(targetId, {
+                  type: 'info',
+                  message: t('taskList.autoConnect.autoSelectedDevice', {
+                    name: fallbackDevice.name || fallbackDevice.address,
+                  }),
+                });
+                matchedDevice = fallbackDevice;
               }
               config = {
                 type: 'Adb',
@@ -558,11 +545,40 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
               const classRegex = controller.win32?.class_regex || controller.gamepad?.class_regex;
               const windowRegex =
                 controller.win32?.window_regex || controller.gamepad?.window_regex;
-              const windows = await maaService.findWin32Windows(classRegex, windowRegex);
-              const matchedWindow = windows.find((w) => w.window_name === savedDevice.windowName);
+              // 托盘/后台场景下窗口标题或句柄可能在启动初期波动，增加短时重试避免误判失败
+              let windows = await maaService.findWin32Windows(classRegex, windowRegex);
+              let matchedWindow = windows.find((w) => w.window_name === savedDevice.windowName);
               if (!matchedWindow) {
-                log.warn(`实例 ${targetInstance.name}: 未找到窗口 ${savedDevice.windowName}`);
-                return false;
+                for (let retry = 0; retry < 10; retry++) {
+                  await new Promise((resolve) => setTimeout(resolve, 1000));
+                  windows = await maaService.findWin32Windows(classRegex, windowRegex);
+                  matchedWindow = windows.find((w) => w.window_name === savedDevice.windowName);
+                  if (matchedWindow) break;
+                }
+              }
+              if (!matchedWindow) {
+                // 精确匹配失败时退化到第一个候选窗口，避免整个启动流程直接中断
+                const fallbackWindow = windows[0];
+                if (!fallbackWindow) {
+                  log.warn(`实例 ${targetInstance.name}: 未找到窗口 ${savedDevice.windowName}`);
+                  return false;
+                }
+                log.warn(
+                  `实例 ${targetInstance.name}: 未找到已保存窗口 ${savedDevice.windowName}，退化为自动匹配 ${fallbackWindow.window_name}`,
+                );
+                addLog(targetId, {
+                  type: 'warning',
+                  message: t('taskList.autoConnect.windowNotFound', {
+                    name: savedDevice.windowName,
+                  }),
+                });
+                addLog(targetId, {
+                  type: 'info',
+                  message: t('taskList.autoConnect.autoSelectedWindow', {
+                    name: fallbackWindow.window_name || fallbackWindow.class_name,
+                  }),
+                });
+                matchedWindow = fallbackWindow;
               }
               if (controllerType === 'Win32') {
                 config = {
@@ -594,7 +610,14 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
             onPhaseChange?.('searching');
 
             if (controllerType === 'Adb') {
-              const devices = await maaService.findAdbDevices();
+              let devices = await maaService.findAdbDevices();
+              if (devices.length === 0) {
+                for (let retry = 0; retry < 10; retry++) {
+                  await new Promise((resolve) => setTimeout(resolve, 1000));
+                  devices = await maaService.findAdbDevices();
+                  if (devices.length > 0) break;
+                }
+              }
               if (devices.length === 0) {
                 log.warn(`实例 ${targetInstance.name}: 未搜索到任何 ADB 设备`);
                 addLog(targetId, {
@@ -626,7 +649,14 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
               const classRegex = controller.win32?.class_regex || controller.gamepad?.class_regex;
               const windowRegex =
                 controller.win32?.window_regex || controller.gamepad?.window_regex;
-              const windows = await maaService.findWin32Windows(classRegex, windowRegex);
+              let windows = await maaService.findWin32Windows(classRegex, windowRegex);
+              if (windows.length === 0) {
+                for (let retry = 0; retry < 10; retry++) {
+                  await new Promise((resolve) => setTimeout(resolve, 1000));
+                  windows = await maaService.findWin32Windows(classRegex, windowRegex);
+                  if (windows.length > 0) break;
+                }
+              }
               if (windows.length === 0) {
                 log.warn(`实例 ${targetInstance.name}: 未搜索到任何窗口`);
                 addLog(targetId, {
@@ -864,6 +894,12 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
 
         log.info(`实例 ${targetInstance.name}: 任务已提交, task_ids:`, taskIds);
 
+        // 立即设置任务队列，避免极短任务在状态初始化前完成导致 UI 卡在运行态
+        runningInstanceIdRef.current = targetId;
+        setPendingTaskIds(targetId, taskIds);
+        setCurrentTaskIndexStore(targetId, 0);
+        setInstanceCurrentTaskId(targetId, taskIds[0] ?? null);
+
         // 初始化任务运行状态
         const enabledTaskIds = enabledTasks.map((t) => t.id);
         setAllTasksRunStatus(targetId, enabledTaskIds, 'pending');
@@ -895,12 +931,6 @@ export function Toolbar({ showAddPanel, onToggleAddPanel }: ToolbarProps) {
         if (enabledTasks.length > 0) {
           setTaskRunStatus(targetId, enabledTasks[0].id, 'running');
         }
-
-        // 设置任务队列
-        runningInstanceIdRef.current = targetId;
-        setPendingTaskIds(targetId, taskIds);
-        setCurrentTaskIndexStore(targetId, 0);
-        setInstanceCurrentTaskId(targetId, taskIds[0]);
 
         return true;
       } catch (err) {

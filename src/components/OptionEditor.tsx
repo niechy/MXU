@@ -18,6 +18,15 @@ export function switchHasNestedOptions(optionDef: OptionDefinition): boolean {
   return optionDef.cases.some((c: CaseItem) => c.option && c.option.length > 0);
 }
 
+function isOptionControllerIncompatible(
+  optionDef: OptionDefinition | null | undefined,
+  currentControllerName: string | undefined,
+): boolean {
+  if (!optionDef?.controller || optionDef.controller.length === 0) return false;
+  if (!currentControllerName) return false;
+  return !optionDef.controller.includes(currentControllerName);
+}
+
 /** 异步加载图标组件 */
 function AsyncIcon({
   icon,
@@ -307,6 +316,13 @@ export function OptionEditor({
   const optionDef = isMxuOption ? mxuOptionDef : projectInterface?.option?.[optionKey];
   if (!optionDef) return null;
 
+  const currentControllerName =
+    instances.find((instance) => instance.id === instanceId)?.controllerName ||
+    projectInterface?.controller[0]?.name;
+  const effectiveControllerIncompatible =
+    controllerIncompatible || isOptionControllerIncompatible(optionDef, currentControllerName);
+  const optionDisabled = disabled || effectiveControllerIncompatible;
+
   const langKey = getInterfaceLangKey(language);
   // 对于 MXU 内置选项，使用 t() 翻译
   const optionLabel = isMxuOption
@@ -354,14 +370,14 @@ export function OptionEditor({
         <div
           className={clsx(
             'flex items-center justify-between',
-            controllerIncompatible && 'opacity-60',
+            effectiveControllerIncompatible && 'opacity-60',
           )}
         >
           <OptionLabelWithIncompatible
             label={optionLabel}
             icon={optionDef.icon}
             basePath={basePath}
-            controllerIncompatible={controllerIncompatible}
+            controllerIncompatible={effectiveControllerIncompatible}
           />
           <SwitchButton
             value={isChecked}
@@ -371,7 +387,7 @@ export function OptionEditor({
                 value: checked,
               });
             }}
-            disabled={disabled}
+            disabled={optionDisabled}
           />
         </div>
         <OptionDescription
@@ -471,14 +487,14 @@ export function OptionEditor({
         className={clsx(
           'space-y-2',
           depth > 0 && 'ml-4 pl-3 border-l-2 border-border',
-          controllerIncompatible && 'opacity-60',
+          effectiveControllerIncompatible && 'opacity-60',
         )}
       >
         <OptionLabelWithIncompatible
           label={optionLabel}
           icon={optionDef.icon}
           basePath={basePath}
-          controllerIncompatible={controllerIncompatible}
+          controllerIncompatible={effectiveControllerIncompatible}
         />
         <OptionDescription
           description={optionDescription}
@@ -503,7 +519,7 @@ export function OptionEditor({
               langKey={langKey}
               resolveI18nText={resolveI18nText}
               basePath={basePath}
-              disabled={disabled}
+              disabled={optionDisabled}
               isMxuOption={isMxuOption}
               t={t}
             />
@@ -526,7 +542,7 @@ export function OptionEditor({
       className={clsx(
         'space-y-2',
         depth > 0 && 'ml-4 pl-3 border-l-2 border-border',
-        controllerIncompatible && 'opacity-60',
+        effectiveControllerIncompatible && 'opacity-60',
       )}
     >
       <div className="flex items-center gap-3">
@@ -534,12 +550,12 @@ export function OptionEditor({
           label={optionLabel}
           icon={optionDef.icon}
           basePath={basePath}
-          controllerIncompatible={controllerIncompatible}
+          controllerIncompatible={effectiveControllerIncompatible}
         />
         <SelectComponent
           className="flex-1"
           value={selectedCaseName}
-          disabled={disabled}
+          disabled={optionDisabled}
           basePath={basePath}
           options={optionDef.cases.map((caseItem) => {
             // 对于 MXU 内置选项，使用 t() 翻译；否则使用 resolveI18nText

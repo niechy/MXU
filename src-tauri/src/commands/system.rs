@@ -2,7 +2,7 @@
 //!
 //! 提供权限检查、系统信息查询、全局选项设置等功能
 
-use log::info;
+use log::{info, warn};
 use std::sync::atomic::{AtomicBool, Ordering};
 
 use super::types::SystemInfo;
@@ -443,35 +443,67 @@ pub async fn run_action(
     wait_for_exit: bool,
 ) -> Result<i32, String> {
     use std::process::Command;
+    use std::{ffi::OsString, path::PathBuf};
 
     info!(
         "run_action: program={}, args={}, wait={}",
         program, args, wait_for_exit
     );
 
-    // 使用 shell 语义解析参数至数组（支持引号）
-    let args_vec: Vec<String> = if args.trim().is_empty() {
+    // 解析参数字符串：
+    // - 优先按 shell 规则处理引号（支持带空格参数）
+    // - 失败时降级为按空格分割，兼容旧行为
+    let parsed_args: Vec<String> = if args.trim().is_empty() {
         vec![]
     } else {
-        shell_words::split(&args).map_err(|e| format!("Failed to parse args: {}", e))?
+        match shell_words::split(&args) {
+            Ok(v) => v,
+            Err(e) => {
+                warn!(
+                    "run_action args parse failed, fallback to split_whitespace: {}",
+                    e
+                );
+                args.split_whitespace().map(|s| s.to_string()).collect()
+            }
+        }
     };
 
-    let mut cmd = Command::new(&program);
+    let program_path = PathBuf::from(&program);
+    // 优先使用程序自身目录作为工作目录，避免许多程序在非自身目录启动失败
+    // 仅当程序是相对路径且无法推导目录时，才回退到传入的 cwd
+    let effective_cwd = if program_path.is_absolute() {
+        program_path.parent().map(|p| p.to_path_buf())
+    } else {
+        cwd.as_ref().map(PathBuf::from).or_else(|| {
+            program_path.parent().and_then(|p| {
+                if p.as_os_str().is_empty() {
+                    None
+                } else {
+                    Some(p.to_path_buf())
+                }
+            })
+        })
+    };
+
+    let mut cmd = if program_path.is_absolute() {
+        Command::new(&program_path)
+    } else if let Some(base) = cwd.as_ref() {
+        let full = PathBuf::from(base).join(&program_path);
+        Command::new(full)
+    } else {
+        Command::new(&program)
+    };
 
     // 添加参数
-    if !args_vec.is_empty() {
-        cmd.args(&args_vec);
+    if !parsed_args.is_empty() {
+        let os_args: Vec<OsString> = parsed_args.iter().map(OsString::from).collect();
+        cmd.args(&os_args);
     }
 
     // 设置工作目录
-    if let Some(ref dir) = cwd {
-        cmd.current_dir(dir);
-    } else {
-        // 默认使用程序所在目录作为工作目录
-        if let Some(parent) = std::path::Path::new(&program).parent() {
-            if parent.exists() {
-                cmd.current_dir(parent);
-            }
+    if let Some(dir) = effective_cwd {
+        if dir.exists() {
+            cmd.current_dir(dir);
         }
     }
 
@@ -539,9 +571,16 @@ pub fn is_autostart() -> bool {
 /// 自动迁移旧版注册表自启动到任务计划程序
 #[cfg(windows)]
 pub fn migrate_legacy_autostart() {
-    if has_legacy_registry_autostart() {
+    let has_legacy = has_legacy_registry_autostart();
+    let has_schtask = has_schtask_autostart();
+
+    // 自动修复逻辑：
+    // - 旧版注册表自启动：迁移到任务计划程序
+    // - 已存在计划任务：启动时覆盖重建，确保参数（如 /delay）随版本更新自动生效
+    if has_legacy || has_schtask {
         if create_schtask_autostart().is_ok() {
             remove_legacy_registry_autostart();
+            info!("自启动任务已自动更新");
         }
     }
 }
@@ -555,6 +594,8 @@ fn to_wide(s: &str) -> Vec<u16> {
 
 #[cfg(windows)]
 fn create_schtask_autostart() -> Result<(), String> {
+    // 登录后延迟 30 秒再启动，避免桌面会话/图形栈尚未完全就绪导致白屏或卡死
+    const AUTOSTART_DELAY: &str = "0000:30";
     let exe_path = std::env::current_exe().map_err(|e| format!("获取程序路径失败: {}", e))?;
     let exe = exe_path.to_string_lossy();
     let output = std::process::Command::new("schtasks")
@@ -566,6 +607,8 @@ fn create_schtask_autostart() -> Result<(), String> {
             &format!("\"{}\" --autostart", exe),
             "/sc",
             "onlogon",
+            "/delay",
+            AUTOSTART_DELAY,
             // 强制交互式运行，确保进程绑定到用户桌面会话，避免登录早期会话未就绪导致 WebView 白屏
             "/it",
             "/rl",
@@ -579,6 +622,16 @@ fn create_schtask_autostart() -> Result<(), String> {
         return Err(format!("创建计划任务失败: {}", stderr));
     }
     Ok(())
+}
+
+/// 检查任务计划程序中是否存在 MXU 自启动任务
+#[cfg(windows)]
+fn has_schtask_autostart() -> bool {
+    std::process::Command::new("schtasks")
+        .args(["/query", "/tn", "MXU"])
+        .output()
+        .map(|o| o.status.success())
+        .unwrap_or(false)
 }
 
 /// 清理旧版注册表自启动条目（tauri-plugin-autostart 遗留）
@@ -676,11 +729,7 @@ pub fn autostart_disable() -> Result<(), String> {
 pub fn autostart_is_enabled() -> bool {
     #[cfg(windows)]
     {
-        let schtask = std::process::Command::new("schtasks")
-            .args(["/query", "/tn", "MXU"])
-            .output()
-            .map(|o| o.status.success())
-            .unwrap_or(false);
+        let schtask = has_schtask_autostart();
         schtask || has_legacy_registry_autostart()
     }
     #[cfg(not(windows))]
